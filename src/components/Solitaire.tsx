@@ -152,7 +152,6 @@ export function Solitaire() {
     if (!autoComplete) return;
     const id = window.setTimeout(() => run(() => actions.autoStep()), 130);
     return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoComplete, game]);
 
   // Keyboard (desktop): Ctrl+Z undo, F2 new game, H hint.

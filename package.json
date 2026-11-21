@@ -1,6 +1,6 @@
 {
-  "name": "web-solitaire-game",
-  "version": "0.1.1",
+  "name": "web-classic-solitaire-game",
+  "version": "0.1.2",
   "private": true,
   "scripts": {
     "dev": "next dev",

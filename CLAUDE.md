@@ -1,14 +1,14 @@
 @AGENTS.md
 
-# webSolitaireGame (Classic Solitaire) - project notes for Claude
+# webClassicSolitaireGame (Classic Solitaire) - project notes for Claude
 
 Classic Klondike solitaire (game 12 of the hub), shown as "Classic Solitaire" (folder `D:\_DEv\012_ClassicSolitaire`), for one player, made for an Android phone. No ads, no account,
 works offline, installable as its own app. Single page; the whole game runs in the browser.
 
 ## Accounts and deploy
-- GitHub: personal account **florin2495** only (repo `florin2495/webSolitaireGame`, public). Never the work account.
+- GitHub: personal account **florin2495** only (repo `florin2495/webClassicSolitaireGame`, public). Never the work account.
   Local git identity is pinned in `.git/config`.
-- The user connects the repo to Vercel by hand (suggested project name `012web-solitaire-game`). Once connected, every
+- The user connects the repo to Vercel by hand (suggested project name `012web-classic-solitaire-game`). Once connected, every
   push to `main` deploys to production: https://games.hailatat.icu/classicsolitaire (the hub proxies `/classicsolitaire/*` to this
   project; `basePath: "/classicsolitaire"` in `next.config.ts`, zone in the hub's `next.config.ts`).
 - `vercel.json` pins `"framework": "nextjs"` and `"regions": ["fra1"]` (Frankfurt, next to the Supabase DB). Never remove it.
@@ -70,7 +70,8 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
 | `e2e-ui.yml` "E2E UI (Playwright)" | `tests/ui/*.e2e.ts` on desktop Chromium and Pixel 7 (Chromium): a fixed deal played by taps must match the engine card for card, undo, reload keeps the game, draw 3 fan, new-game confirmation, hint, win (auto-finish, bouncing cards, result, no replay after reload), menu settings/backs/stats; desktop only: manifest + `sw.js`, offline reload, update button (mocked `/api/version`), drag & drop; phone only: fits the screen, card and button sizes, landscape |
 
 - E2E and E2E UI need the deploy of the version under test to be live (run them on `main` after Vercel finished).
-  No database, no secrets.
+  No database, so no `concurrency: e2e` group (nothing shared to protect) and **no repo secrets on purpose** (no
+  workflow needs them; agreed with the user 2026-11-21, exception to `D:\_DEv\CLAUDE.md`). Don't add them back.
 - Playwright files are `*.e2e.ts`, never `*.spec.ts` / `*.test.ts` (Vitest would pick those up).
 - UI tests use `data-card` / `data-pile` (`stock`, `waste`, `f0`-`f3`, `t0`-`t6`) / `data-index` / `data-up` on the card
   images, `data-slot` on the empty places, and `data-testid`: `board`, `stock-slot`, `score`, `time`, `new-game`,
