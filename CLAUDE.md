@@ -40,7 +40,9 @@ silently starts a new game).
   waste are empty and everything is face up, the rest goes up by itself (`autoStep`). Undo is unlimited (in memory).
   "Indiciu" = `findHint`.
 - Win: the cards leave the foundations one by one and bounce off the bottom edge leaving trails (`WinCascade.tsx`,
-  canvas), a tap skips it, then a result dialog. `celebrated` in the saved game stops a replay after a reload.
+  canvas), a tap skips it, then a result dialog. Every copy in a trail has a black outline; 35% of the cards
+  (`SLOW_SHARE` in `src/lib/cascade.ts`, the user's choice) move 1-2 px a step, so their outlines merge into a black band
+  like in the original. `celebrated` in the saved game stops a replay after a reload.
 - Card art is drawn in `src/lib/cards.ts` as SVG (our own design, not copied from any other game). Suits are SVG
   shapes, never the ♠♥♦♣ characters (Android may draw those as emoji). Three backs (blue, red, green).
 - Layout: `src/lib/layout.ts`, 7 columns across the width, long columns squeezed to stay on screen.

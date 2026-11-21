@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { launchVelocity, outlineWidth } from "@/lib/cascade";
 import { faceUrl } from "@/lib/cards";
 
 export interface Launch {
@@ -11,7 +12,8 @@ export interface Launch {
 
 /**
  * The win animation: the cards leave the foundations one by one (kings first), fall and bounce off the bottom edge,
- * and every frame stays painted, so each card leaves a trail. A tap ends it.
+ * and every frame stays painted, so each card leaves a trail of black-outlined copies (slow cards: a black band, see
+ * src/lib/cascade.ts). A tap ends it.
  */
 export function WinCascade({
   launches,
@@ -41,6 +43,7 @@ export function WinCascade({
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
     ctx.scale(dpr, dpr);
+    ctx.strokeStyle = "#000";
     const W = rect.width;
     const H = rect.height;
     const images = new Map<number, HTMLImageElement>();
@@ -50,6 +53,9 @@ export function WinCascade({
       images.set(l.card, img);
     }
     const s = Math.max(0.8, cardW / 71);
+    const lw = outlineWidth(s);
+    ctx.lineWidth = lw;
+    const radius = cardW * 0.07;
     let i = -1;
     let cur: { card: number; x: number; y: number; vx: number; vy: number } | null = null;
     let stopped = false;
@@ -66,8 +72,8 @@ export function WinCascade({
         return;
       }
       const l = launches[i];
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      cur = { card: l.card, x: l.x, y: l.y, vx: dir * (3 + Math.random() * 5) * s, vy: -Math.random() * 7 * s };
+      const { vx, vy } = launchVelocity(Math.random, s);
+      cur = { card: l.card, x: l.x, y: l.y, vx, vy };
       callbacks.current.onLaunch(l.card);
     };
 
@@ -81,7 +87,14 @@ export function WinCascade({
         cur.vy = -cur.vy * 0.8;
       }
       const img = images.get(cur.card);
-      if (img?.complete) ctx.drawImage(img, cur.x, cur.y, cardW, cardH);
+      if (img?.complete) {
+        ctx.drawImage(img, cur.x, cur.y, cardW, cardH);
+        // The classic black outline: on a slow card the outlines of the copies merge into a black band.
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(cur.x + lw / 2, cur.y + lw / 2, cardW - lw, cardH - lw, radius);
+        else ctx.rect(cur.x + lw / 2, cur.y + lw / 2, cardW - lw, cardH - lw);
+        ctx.stroke();
+      }
       if (cur.x + cardW < 0 || cur.x > W) next();
     };
 
