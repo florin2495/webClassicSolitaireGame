@@ -98,6 +98,7 @@ describe("stats", () => {
       drawCount: 3,
       scoring: "vegas",
       timed: false,
+      kingOnly: false,
       back: "red",
     });
     expect(parseSettings({ drawCount: 7, scoring: "x", back: "pink" })).toMatchObject({ drawCount: 1, scoring: "standard", back: "blue" });
