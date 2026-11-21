@@ -6,7 +6,7 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "/solitaire";
+export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "/classicsolitaire";
 export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0";
 
 let deferred: InstallPromptEvent | null = null;

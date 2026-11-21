@@ -125,7 +125,7 @@ export function Menu({
             <p className="text-sm">Jocul rulează ca aplicație instalată ✓. Merge și fără internet.</p>
           ) : installable ? (
             <button type="button" className={btnPrimary} onClick={() => void promptInstall()} data-testid="menu-install">
-              📲 Instalează Solitaire pe telefon
+              📲 Instalează Classic Solitaire pe telefon
             </button>
           ) : (
             <p className="text-sm text-zinc-700">

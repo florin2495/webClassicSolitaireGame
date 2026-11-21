@@ -11,7 +11,7 @@ test("installable: manifest with its own id and scope, icons, service worker scr
   const res = await request.get(`${BASE}/manifest.webmanifest`);
   expect(res.status()).toBe(200);
   const m = await res.json();
-  expect(m).toMatchObject({ id: "/solitaire/", start_url: "/solitaire", scope: "/solitaire", display: "standalone" });
+  expect(m).toMatchObject({ id: "/classicsolitaire/", start_url: "/classicsolitaire", scope: "/classicsolitaire", display: "standalone" });
   expect(m.icons).toHaveLength(3);
   for (const icon of m.icons as { src: string }[]) {
     const r = await request.get(new URL(icon.src, BASE).toString());
@@ -21,7 +21,7 @@ test("installable: manifest with its own id and scope, icons, service worker scr
   const sw = await request.get(`${BASE}/sw.js`);
   expect(sw.status()).toBe(200);
   expect(sw.headers()["content-type"]).toContain("javascript");
-  expect(sw.headers()["service-worker-allowed"]).toBe("/solitaire");
+  expect(sw.headers()["service-worker-allowed"]).toBe("/classicsolitaire");
   expect(await sw.text()).toContain("SKIP_WAITING");
 });
 
@@ -29,7 +29,7 @@ test("works offline once it has been opened", async ({ page, context }) => {
   await page.goto(BASE);
   await expect(page.locator("[data-card]")).toHaveCount(52);
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
-  expect(new URL(scope).pathname).toBe("/solitaire");
+  expect(new URL(scope).pathname).toBe("/classicsolitaire");
   // Second load under the worker's control caches every asset the page uses.
   await page.reload();
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
@@ -48,7 +48,7 @@ test("works offline once it has been opened", async ({ page, context }) => {
 });
 
 test("shows a separate reload button when a newer version is live, and reloading keeps the game", async ({ page }) => {
-  await page.route("**/solitaire/api/version", (route) => route.fulfill({ json: { version: "999.0.0" } }));
+  await page.route("**/classicsolitaire/api/version", (route) => route.fulfill({ json: { version: "999.0.0" } }));
   await openSeed(page, 77);
   await page.locator('[data-pile="stock"]').last().click({ position: { x: 10, y: 5 } });
   const afterDraw = draw(newGame(77, STD))!;

@@ -268,7 +268,7 @@ export function Solitaire() {
         className="flex min-h-11 shrink-0 items-center gap-3 bg-black/25 px-3 text-sm"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <span className="font-bold tracking-wide">Solitaire</span>
+        <span className="font-bold tracking-wide">Classic Solitaire</span>
         <span className="flex-1" />
         {game && game.options.scoring !== "none" && (
           <span className="tabular-nums" data-testid="score">

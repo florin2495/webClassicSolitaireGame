@@ -1,13 +1,13 @@
-// HTTP end-to-end check of the deployed Solitaire (no browser, Node built-ins only).
-// Usage: node scripts/e2e.mjs [baseUrl incl. /solitaire] [vercelProjectUrl incl. /solitaire]
-// Default: production (https://games.hailatat.icu/solitaire). Writes nothing: the only POSTs to /api/feedback are
+// HTTP end-to-end check of the deployed Classic Solitaire (no browser, Node built-ins only).
+// Usage: node scripts/e2e.mjs [baseUrl incl. /classicsolitaire] [vercelProjectUrl incl. /classicsolitaire]
+// Default: production (https://games.hailatat.icu/classicsolitaire). Writes nothing: the only POSTs to /api/feedback are
 // an invalid message (400) and a honeypot one (accepted but never stored).
 import { readFileSync } from "node:fs";
 
-const BASE = (process.argv[2] ?? "https://games.hailatat.icu/solitaire").replace(/\/+$/, "");
+const BASE = (process.argv[2] ?? "https://games.hailatat.icu/classicsolitaire").replace(/\/+$/, "");
 const VERCEL = process.argv[3] ?? null;
 const version = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
-const path = new URL(BASE).pathname; // "/solitaire"
+const path = new URL(BASE).pathname; // "/classicsolitaire"
 let failures = 0;
 
 function check(cond, msg) {
@@ -24,14 +24,14 @@ async function get(url, init) {
   return { status: res.status, headers: res.headers, text };
 }
 
-console.log(`Solitaire E2E against ${BASE} (package.json ${version})`);
+console.log(`Classic Solitaire E2E against ${BASE} (package.json ${version})`);
 
 // Page and assets.
 const page = await get(BASE);
 check(page.status === 200 && (page.headers.get("content-type") ?? "").includes("text/html"), `page -> ${page.status}`);
 check(page.text.includes(`${path}/_next/`), `assets under ${path}/_next/`);
 check(page.text.includes(`${path}/manifest.webmanifest`), "links the manifest");
-check(page.text.includes("<title>Solitaire</title>"), "title Solitaire");
+check(page.text.includes("<title>Classic Solitaire</title>"), "title Classic Solitaire");
 const scripts = [...new Set([...page.text.matchAll(/src="([^"]+\/_next\/static\/[^"]+\.js)"/g)].map((m) => m[1]))];
 check(scripts.length > 0, `${scripts.length} scripts`);
 let versionInJs = false;
@@ -58,7 +58,7 @@ try {
   manifest = JSON.parse(m.text);
 } catch {}
 check(m.status === 200, `manifest -> ${m.status}`);
-check(manifest.id === "/solitaire/" && manifest.scope === "/solitaire" && manifest.start_url === "/solitaire", "manifest: own id, scope and start_url");
+check(manifest.id === "/classicsolitaire/" && manifest.scope === "/classicsolitaire" && manifest.start_url === "/classicsolitaire", "manifest: own id, scope and start_url");
 check(manifest.display === "standalone" && Array.isArray(manifest.icons) && manifest.icons.length === 3, "manifest: standalone, 3 icons");
 for (const icon of manifest.icons ?? []) {
   const r = await fetch(new URL(icon.src, BASE));
@@ -68,7 +68,7 @@ const apple = await fetch(`${BASE}/pwa-icons/apple`);
 check(apple.status === 200, `apple icon -> ${apple.status}`);
 const sw = await get(`${BASE}/sw.js`);
 check(sw.status === 200 && (sw.headers.get("content-type") ?? "").includes("javascript"), `sw.js -> ${sw.status}`);
-check(sw.headers.get("service-worker-allowed") === "/solitaire", `sw.js Service-Worker-Allowed: ${sw.headers.get("service-worker-allowed")}`);
+check(sw.headers.get("service-worker-allowed") === "/classicsolitaire", `sw.js Service-Worker-Allowed: ${sw.headers.get("service-worker-allowed")}`);
 check(sw.text.includes(JSON.stringify(version)), "sw.js carries this version (a new deploy = a new worker)");
 
 // Feedback validation (never stores anything).

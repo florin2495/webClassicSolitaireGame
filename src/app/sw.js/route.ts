@@ -1,18 +1,18 @@
 import { connection } from "next/server";
 import pkg from "../../../package.json";
 
-const BASE = "/solitaire";
+const BASE = "/classicsolitaire";
 
-// GET /solitaire/sw.js - the service worker. Its text contains the app version, so every deploy (version bump)
+// GET /classicsolitaire/sw.js - the service worker. Its text contains the app version, so every deploy (version bump)
 // is a new worker: the browser installs it in the background and the page shows "Versiune nouă" (UpdateButton).
 // Offline: the page is cached on install (with every /_next/static file it references), pages are network-first
 // with a 4 s fallback to the cache, hashed /_next/static files are cache-first, /api is never cached.
-// Scope is "/solitaire" (no trailing slash, the URL of the page), hence the Service-Worker-Allowed header.
+// Scope is "/classicsolitaire" (no trailing slash, the URL of the page), hence the Service-Worker-Allowed header.
 const source = `
 const VERSION = ${JSON.stringify(pkg.version)};
 const BASE = ${JSON.stringify(BASE)};
 const CACHE = "solitaire-" + VERSION;
-const ASSET_RE = /\\/solitaire\\/_next\\/static\\/[A-Za-z0-9_\\-.\\/~%@]+/g;
+const ASSET_RE = /\\/classicsolitaire\\/_next\\/static\\/[A-Za-z0-9_\\-.\\/~%@]+/g;
 
 async function precache() {
   const cache = await caches.open(CACHE);

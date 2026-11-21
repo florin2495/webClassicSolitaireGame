@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { cardOf, locate, newGame, SUITS, type GameState, type Options, type Pile } from "../../src/lib/solitaire";
 
-export const BASE = (process.env.E2E_BASE_URL ?? "https://games.hailatat.icu/solitaire").replace(/\/+$/, "");
+export const BASE = (process.env.E2E_BASE_URL ?? "https://games.hailatat.icu/classicsolitaire").replace(/\/+$/, "");
 export const KEY_GAME = "solitaire:game:v1";
 export const STD: Options = { drawCount: 1, scoring: "standard", timed: true };
 

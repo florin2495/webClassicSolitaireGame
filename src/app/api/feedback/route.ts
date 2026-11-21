@@ -5,7 +5,7 @@ import { checkFeedback } from "@/lib/feedback";
 const GAME = "solitaire";
 const VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? null;
 
-// POST /solitaire/api/feedback - store a short player message in the hub's shared hub_feedback table.
+// POST /classicsolitaire/api/feedback - store a short player message in the hub's shared hub_feedback table.
 export async function POST(req: Request) {
   const body: unknown = await req.json().catch(() => null);
   const check = checkFeedback(body);

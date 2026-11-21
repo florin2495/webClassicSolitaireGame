@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Solitaire",
-  applicationName: "Solitaire",
-  appleWebApp: { capable: true, title: "Solitaire", statusBarStyle: "black-translucent" },
-  // Metadata icon URLs are not prefixed with basePath; keep "/solitaire" in sync with next.config.ts.
+  title: "Classic Solitaire",
+  applicationName: "Classic Solitaire",
+  appleWebApp: { capable: true, title: "Classic Solitaire", statusBarStyle: "black-translucent" },
+  // Metadata icon URLs are not prefixed with basePath; keep "/classicsolitaire" in sync with next.config.ts.
   icons: {
-    icon: [{ url: "/solitaire/pwa-icons/192", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/solitaire/pwa-icons/apple", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/classicsolitaire/pwa-icons/192", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/classicsolitaire/pwa-icons/apple", sizes: "180x180", type: "image/png" }],
   },
   other: { "apple-mobile-web-app-capable": "yes", "mobile-web-app-capable": "yes" },
   description: "Pasiența clasică Klondike. Fără reclame, merge și fără internet.",

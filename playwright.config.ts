@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // UI end-to-end tests (tests/ui/*.e2e.ts), run in GitHub Actions by .github/workflows/e2e-ui.yml.
-// Target = E2E_BASE_URL (incl. /solitaire), default production; read in tests/ui/helpers.ts. Nothing touches the
+// Target = E2E_BASE_URL (incl. /classicsolitaire), default production; read in tests/ui/helpers.ts. Nothing touches the
 // database: the game lives in the browser (localStorage) and no test sends feedback.
 
 export default defineConfig({

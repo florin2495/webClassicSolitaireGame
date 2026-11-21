@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: "Base URL including /solitaire"
+        description: "Base URL including /classicsolitaire"
         required: true
-        default: "https://games.hailatat.icu/solitaire"
+        default: "https://games.hailatat.icu/classicsolitaire"
 
 permissions:
   contents: read

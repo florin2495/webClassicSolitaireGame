@@ -4,7 +4,7 @@ import { expectBoard, hitCard, hitStock, loadState, nearWin, openSeed, STD } fro
 
 const SEED = 20261121;
 
-test.describe("Solitaire", () => {
+test.describe("Classic Solitaire", () => {
   test("plays a fixed deal by taps exactly like the rules engine, undoes, and keeps the game after a reload", async ({ page }, info) => {
     const touch = info.project.name === "android-chromium";
     await openSeed(page, SEED);

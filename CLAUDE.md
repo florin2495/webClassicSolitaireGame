@@ -1,20 +1,20 @@
 @AGENTS.md
 
-# webSolitaireGame - project notes for Claude
+# webSolitaireGame (Classic Solitaire) - project notes for Claude
 
-Classic Klondike solitaire (game 12 of the hub), for one player, made for an Android phone. No ads, no account,
+Classic Klondike solitaire (game 12 of the hub), shown as "Classic Solitaire" (folder `D:\_DEv\012_ClassicSolitaire`), for one player, made for an Android phone. No ads, no account,
 works offline, installable as its own app. Single page; the whole game runs in the browser.
 
 ## Accounts and deploy
 - GitHub: personal account **florin2495** only (repo `florin2495/webSolitaireGame`, public). Never the work account.
   Local git identity is pinned in `.git/config`.
 - The user connects the repo to Vercel by hand (suggested project name `012web-solitaire-game`). Once connected, every
-  push to `main` deploys to production: https://games.hailatat.icu/solitaire (the hub proxies `/solitaire/*` to this
-  project; `basePath: "/solitaire"` in `next.config.ts`, zone in the hub's `next.config.ts`).
+  push to `main` deploys to production: https://games.hailatat.icu/classicsolitaire (the hub proxies `/classicsolitaire/*` to this
+  project; `basePath: "/classicsolitaire"` in `next.config.ts`, zone in the hub's `next.config.ts`).
 - `vercel.json` pins `"framework": "nextjs"` and `"regions": ["fra1"]` (Frankfurt, next to the Supabase DB). Never remove it.
 - Env vars (Vercel + `.env.local`, only for feedback): `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
 - Feedback (`POST /api/feedback`) writes to `hub_feedback` (owned by `florin2495/hailataticu-hub`, slug `solitaire`).
-- Hub entry: `D:\_DEv\000_Startup\src\games.ts` (slug `solitaire`, url `/solitaire`).
+- Hub entry: `D:\_DEv\000_Startup\src\games.ts` (slug `solitaire`, url `/classicsolitaire`).
 - Ask the user before pushing (= deploying), unless they explicitly say to deploy.
 - **Before every push, bump the patch version** in `package.json` (and `npm install --package-lock-only`). It is shown
   in the menu ("Versiunea x.y.z"), and it is what makes the update button appear on open copies of the game.
@@ -45,15 +45,17 @@ silently starts a new game).
   every change. `?seed=N&draw=1|3` deals a fixed game (tests); the parameters are removed from the URL right away.
 
 ## PWA, offline and the update button
-- `manifest.ts`: its own app (`id` `/solitaire/`, `scope` and `start_url` `/solitaire`), so it installs separately
+- Names: page title and manifest `name` "Classic Solitaire"; manifest `short_name` "Solitaire" (Android cuts longer
+  home-screen labels). Hub card "Classic Solitaire", feedback slug stays `solitaire` (like Bingo: path `/classicbingo`, slug `bingo`).
+- `manifest.ts`: its own app (`id` `/classicsolitaire/`, `scope` and `start_url` `/classicsolitaire`), so it installs separately
   from the hub app. Android Chrome: the page catches `beforeinstallprompt` (`src/lib/pwa.ts`) and shows
   "📲 Instalează pe telefon"; the menu explains the manual way.
-- Service worker: `src/app/sw.js/route.ts` serves `/solitaire/sw.js` (request-time, contains the version, header
-  `Service-Worker-Allowed: /solitaire` because the page URL has no trailing slash). It precaches the page and every
+- Service worker: `src/app/sw.js/route.ts` serves `/classicsolitaire/sw.js` (request-time, contains the version, header
+  `Service-Worker-Allowed: /classicsolitaire` because the page URL has no trailing slash). It precaches the page and every
   `/_next/static` file the HTML references; pages are network-first (4 s, then the cache), hashed static files
   cache-first, `/api` never cached. Old caches (`solitaire-<version>`) are deleted on activate.
 - Update button (`UpdateButton.tsx`, in its own strip above the board, never over the cards): shown when
-  `GET /solitaire/api/version` differs from the bundled version or a new worker is waiting; it tells the worker to
+  `GET /classicsolitaire/api/version` differs from the bundled version or a new worker is waiting; it tells the worker to
   take over (`SKIP_WAITING`) and reloads. Checked on load, on every return to the app and every 5 minutes. The game
   is saved, so reloading loses nothing.
 
