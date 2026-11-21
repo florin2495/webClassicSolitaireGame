@@ -8,8 +8,8 @@
 
 import { draw, maxRecycles, move, type GameState, type Pile } from "./solitaire";
 
-const FOUNDATIONS: Pile[] = [0, 1, 2, 3].map((index) => ({ kind: "foundation", index }));
-const COLUMNS: Pile[] = [0, 1, 2, 3, 4, 5, 6].map((index) => ({ kind: "tableau", index }));
+const FOUNDATIONS = [0, 1, 2, 3].map((index) => ({ kind: "foundation" as const, index }));
+const COLUMNS = [0, 1, 2, 3, 4, 5, 6].map((index) => ({ kind: "tableau" as const, index }));
 const WASTE: Pile = { kind: "waste" };
 
 const hiddenCount = (s: GameState) => s.tableau.reduce((n, c) => n + c.hidden, 0);
