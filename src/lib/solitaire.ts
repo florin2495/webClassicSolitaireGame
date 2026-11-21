@@ -19,6 +19,8 @@ export interface Options {
   drawCount: DrawCount;
   scoring: Scoring;
   timed: boolean;
+  /** Only a king may go on an empty column (the classic rule). Missing or false: any card may. */
+  kingOnly?: boolean;
 }
 
 export interface Column {
@@ -57,7 +59,7 @@ export type Pile =
   | { kind: "foundation"; index: number }
   | { kind: "tableau"; index: number };
 
-export const DEFAULT_OPTIONS: Options = { drawCount: 1, scoring: "standard", timed: true };
+export const DEFAULT_OPTIONS: Options = { drawCount: 1, scoring: "standard", timed: true, kingOnly: false };
 
 export const suitIndex = (c: number) => Math.floor(c / 13);
 export const suitOf = (c: number): Suit => SUITS[suitIndex(c)];
@@ -174,12 +176,16 @@ export function canOnFoundation(card: number, pile: number[]): boolean {
   return suitIndex(t) === suitIndex(card) && rankOf(card) === rankOf(t) + 1;
 }
 
-export function canOnTableau(card: number, col: Column): boolean {
+/** `anyCard`: any card may start an empty column, not only a king. */
+export function canOnTableau(card: number, col: Column, anyCard = false): boolean {
   const t = top(col.cards);
-  if (t === undefined) return rankOf(card) === 13;
+  if (t === undefined) return anyCard || rankOf(card) === 13;
   if (col.hidden >= col.cards.length) return false;
   return isRed(t) !== isRed(card) && rankOf(card) === rankOf(t) - 1;
 }
+
+/** The game's empty-column rule, for `canOnTableau`. */
+export const anyOnEmpty = (s: GameState): boolean => s.options.kingOnly !== true;
 
 /** A face-up run where every card goes on the one before it. */
 export function isRun(cards: number[]): boolean {
@@ -245,7 +251,7 @@ export function move(s: GameState, from: Pile, index: number | undefined, to: Pi
   if (to.kind === "foundation") {
     if (cards.length !== 1 || !s.foundations[to.index] || !canOnFoundation(first, s.foundations[to.index])) return null;
   } else if (to.kind === "tableau") {
-    if (!s.tableau[to.index] || !canOnTableau(first, s.tableau[to.index])) return null;
+    if (!s.tableau[to.index] || !canOnTableau(first, s.tableau[to.index], anyOnEmpty(s))) return null;
   } else {
     return null;
   }
@@ -304,14 +310,14 @@ export function autoTarget(s: GameState, from: Pile, index?: number): Pile | nul
     const c = (start + k) % 7;
     if (from.kind === "tableau" && c === from.index) continue;
     const col = s.tableau[c];
-    if (!canOnTableau(first, col)) continue;
+    if (!canOnTableau(first, col, anyOnEmpty(s))) continue;
     if (col.cards.length === 0) {
       empty ??= c;
       continue;
     }
     return { kind: "tableau", index: c };
   }
-  // A king that already sits at the bottom of its column gains nothing from an empty column.
+  // A card that already sits at the bottom of its column gains nothing from an empty column.
   if (empty !== null && !(from.kind === "tableau" && (index ?? 0) === 0)) return { kind: "tableau", index: empty };
   return null;
 }
@@ -386,7 +392,7 @@ export function findHint(s: GameState): Hint | null {
     if (col.hidden === 0 || col.cards.length === 0) continue;
     const card = col.cards[col.hidden];
     for (let d = 0; d < 7; d++) {
-      if (d === c || !canOnTableau(card, s.tableau[d])) continue;
+      if (d === c || !canOnTableau(card, s.tableau[d], anyOnEmpty(s))) continue;
       return { from: { kind: "tableau", index: c }, index: col.hidden, to: { kind: "tableau", index: d } };
     }
   }
@@ -424,6 +430,7 @@ export function isValidGame(x: unknown): x is GameState {
   if (s.v !== 1 || typeof s.seed !== "number" || !s.options) return false;
   if (s.options.drawCount !== 1 && s.options.drawCount !== 3) return false;
   if (!["standard", "vegas", "none"].includes(s.options.scoring)) return false;
+  if (s.options.kingOnly !== undefined && typeof s.options.kingOnly !== "boolean") return false;
   if (!Array.isArray(s.stock) || !Array.isArray(s.waste) || !Array.isArray(s.foundations) || !Array.isArray(s.tableau)) return false;
   if (s.foundations.length !== 4 || s.tableau.length !== 7) return false;
   for (const n of [s.wasteFan, s.score, s.bonus, s.recycles, s.moves, s.elapsedMs]) if (typeof n !== "number" || !Number.isFinite(n)) return false;

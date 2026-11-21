@@ -59,6 +59,41 @@ test.describe("Classic Solitaire", () => {
     await expectBoard(page, g);
   });
 
+  test("empty column: any card by default, only a king after switching the menu setting", async ({ page }, info) => {
+    const touch = info.project.name === "android-chromium";
+    // A fresh deal with column 0 emptied (its card goes under the stock, so all 52 cards stay in play).
+    const d = newGame(SEED, STD);
+    const g: GameState = {
+      ...d,
+      stock: [d.tableau[0].cards[0], ...d.stock],
+      tableau: [{ cards: [], hidden: 0 }, ...d.tableau.slice(1)],
+    };
+    const T0 = { kind: "tableau", index: 0 } as const;
+    // A column whose top card the engine sends to the empty column (not a king, so the rule matters).
+    const col = [1, 2, 3, 4, 5, 6].find((c) => {
+      const cards = g.tableau[c].cards;
+      const t = autoTarget(g, { kind: "tableau", index: c });
+      return t?.kind === "tableau" && t.index === 0 && cards[cards.length - 1] % 13 !== 12;
+    });
+    test.skip(col === undefined, "no top card of this deal goes to the empty column");
+    const from = { kind: "tableau", index: col! } as const;
+    const card = g.tableau[col!].cards[g.tableau[col!].cards.length - 1];
+    await loadState(page, g);
+
+    await hitCard(page, card, touch);
+    await expectBoard(page, move(g, from, g.tableau[col!].cards.length - 1, T0)!);
+
+    await page.getByTestId("undo").click();
+    await expectBoard(page, g);
+    await page.getByTestId("menu-open").click();
+    await page.getByTestId("setting-empty").getByRole("button", { name: "Doar Popa (K)" }).click();
+    await page.getByRole("button", { name: "Închide" }).click();
+    // Nothing else fitted that card (that is why it went to the empty column), so now it stays put.
+    expect(autoTarget({ ...g, options: { ...g.options, kingOnly: true } }, from)).toBeNull();
+    await hitCard(page, card, touch);
+    await expectBoard(page, g);
+  });
+
   test("draw 3 fans three cards, and new game asks first when a game is running", async ({ page }) => {
     await openSeed(page, SEED, 3);
     const g = newGame(SEED, { ...STD, drawCount: 3 });

@@ -6,7 +6,7 @@ import { actions, EMPTY_STATS, getSnapshot, parseSettings, parseStats, updateSta
 describe("store", () => {
   beforeEach(() => {
     actions.newGame(42);
-    actions.updateSettings({ drawCount: 1, scoring: "standard", timed: true });
+    actions.updateSettings({ drawCount: 1, scoring: "standard", timed: true, kingOnly: false });
     actions.newGame(42);
     actions.resetStats();
   });
@@ -45,6 +45,23 @@ describe("store", () => {
     expect(getSnapshot().game.options.drawCount).toBe(1);
   });
 
+  it("the empty-column rule defaults to any card and switches at once, also for undo", () => {
+    expect(getSnapshot().settings.kingOnly).toBe(false);
+    expect(getSnapshot().game.options.kingOnly).toBe(false);
+    actions.draw();
+    actions.updateSettings({ kingOnly: true });
+    expect(getSnapshot().game.options.kingOnly).toBe(true);
+    expect(getSnapshot().game.seed).toBe(42); // same game, no re-deal
+    expect(getSnapshot().stats.played).toBe(1);
+    expect(actions.undo()).toBe(true);
+    expect(getSnapshot().game.options.kingOnly).toBe(true);
+    actions.updateSettings({ kingOnly: false });
+    expect(getSnapshot().game.options.kingOnly).toBe(false);
+    expect(parseSettings({}).kingOnly).toBe(false);
+    expect(parseSettings({ kingOnly: true }).kingOnly).toBe(true);
+    expect(parseSettings({ kingOnly: "yes" }).kingOnly).toBe(false);
+  });
+
   it("an abandoned game breaks the winning streak", () => {
     actions.draw();
     actions.newGame(8);
@@ -76,7 +93,7 @@ describe("stats", () => {
   });
 
   it("reads back stored settings and stats defensively", () => {
-    expect(parseSettings(null)).toEqual({ drawCount: 1, scoring: "standard", timed: true, back: "blue" });
+    expect(parseSettings(null)).toEqual({ drawCount: 1, scoring: "standard", timed: true, kingOnly: false, back: "blue" });
     expect(parseSettings({ drawCount: 3, scoring: "vegas", timed: false, back: "red" })).toEqual({
       drawCount: 3,
       scoring: "vegas",

@@ -16,6 +16,7 @@ import {
 } from "./solitaire";
 
 export interface Settings extends Options {
+  kingOnly: boolean;
   back: BackId;
 }
 
@@ -40,7 +41,7 @@ export const KEY_SETTINGS = "solitaire:settings:v1";
 export const KEY_STATS = "solitaire:stats:v1";
 const HISTORY_MAX = 500;
 
-export const DEFAULT_SETTINGS: Settings = { drawCount: 1, scoring: "standard", timed: true, back: "blue" };
+export const DEFAULT_SETTINGS: Settings = { drawCount: 1, scoring: "standard", timed: true, kingOnly: false, back: "blue" };
 export const EMPTY_STATS: Stats = { played: 0, won: 0, bestScore: null, bestTimeMs: null, streak: 0, bestStreak: 0 };
 
 let snap: Snapshot | null = null;
@@ -70,6 +71,7 @@ export function parseSettings(x: unknown): Settings {
     drawCount: o.drawCount === 3 ? 3 : 1,
     scoring: o.scoring === "vegas" || o.scoring === "none" ? o.scoring : "standard",
     timed: o.timed !== false,
+    kingOnly: o.kingOnly === true,
     back: isBackId(o.back) ? o.back : DEFAULT_SETTINGS.back,
   };
 }
@@ -88,7 +90,7 @@ export function parseStats(x: unknown): Stats {
   };
 }
 
-const optionsOf = (s: Settings): Options => ({ drawCount: s.drawCount, scoring: s.scoring, timed: s.timed });
+const optionsOf = (s: Settings): Options => ({ drawCount: s.drawCount, scoring: s.scoring, timed: s.timed, kingOnly: s.kingOnly });
 
 /** `?seed=123` (and optionally `&draw=3`) deals a fixed game: used by the end-to-end tests. */
 function seedFromUrl(): { seed: number; draw?: 1 | 3 } | null {
@@ -209,16 +211,23 @@ export const actions = {
     history = [];
     commit({ ...cur, stats, game: newGame(seed, optionsOf(cur.settings)), canUndo: false });
   },
-  /** Draw/scoring/timer changes apply to the next deal (right away when no card has moved yet). */
+  /** Draw/scoring/timer changes apply to the next deal (right away when no card has moved yet).
+   *  The empty-column rule applies at once, also to the undo history (an undo must not bring the old rule back). */
   updateSettings(patch: Partial<Settings>) {
-    const cur = getSnapshot();
+    let cur = getSnapshot();
     const settings = parseSettings({ ...cur.settings, ...patch });
+    const ruleChanged = settings.kingOnly !== (cur.game.options.kingOnly === true);
+    if (ruleChanged) {
+      const withRule = (g: GameState): GameState => ({ ...g, options: { ...g.options, kingOnly: settings.kingOnly } });
+      history = history.map(withRule);
+      cur = { ...cur, game: withRule(cur.game) };
+    }
     const rules = settings.drawCount !== cur.settings.drawCount || settings.scoring !== cur.settings.scoring || settings.timed !== cur.settings.timed;
     if (rules && !cur.game.started) {
       history = [];
       commit({ ...cur, settings, game: newGame(cur.game.seed, optionsOf(settings)), canUndo: false });
     } else {
-      commit({ ...cur, settings }, false);
+      commit({ ...cur, settings }, ruleChanged);
     }
   },
   markCelebrated() {

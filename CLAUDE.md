@@ -8,7 +8,7 @@ works offline, installable as its own app. Single page; the whole game runs in t
 ## Accounts and deploy
 - GitHub: personal account **florin2495** only (repo `florin2495/webClassicSolitaireGame`, public). Never the work account.
   Local git identity is pinned in `.git/config`.
-- The user connects the repo to Vercel by hand (suggested project name `012web-classic-solitaire-game`). Once connected, every
+- The user connects the repo to Vercel by hand (suggested project name `012_web-classic-solitaire-game`, domain `012web-classic-solitaire-game.vercel.app`). Once connected, every
   push to `main` deploys to production: https://games.hailatat.icu/classicsolitaire (the hub proxies `/classicsolitaire/*` to this
   project; `basePath: "/classicsolitaire"` in `next.config.ts`, zone in the hub's `next.config.ts`).
 - `vercel.json` pins `"framework": "nextjs"` and `"regions": ["fra1"]` (Frankfurt, next to the Supabase DB). Never remove it.
@@ -32,8 +32,11 @@ silently starts a new game).
   3rd recycle with draw 3, −2 every 10 s when timed, bonus 700000/seconds on a win of 30 s+, never below 0), Vegas
   (−52, +5 per foundation card, 1 pass with draw 1, 3 with draw 3) or none. Face-down cards turn over by themselves.
   Same seed = same deal (`mulberry32`).
-- A tap sends a card where it fits (`autoTarget`: foundation first, then a non-empty column, an empty column only for
-  a king that is not already at the bottom); cards can also be dragged (pointer events, `dropTarget`). When stock and
+- Empty column: **any card by default** (the user's choice, 2026-11-21; the classic XP rule is king only). Menu setting
+  "Pe o coloană goală poate veni" = `Options.kingOnly` (missing = false, so old saves count as any card); it applies at
+  once, to the current game and its undo history, not from the next deal. Engine: `canOnTableau(card, col, anyOnEmpty(s))`.
+- A tap sends a card where it fits (`autoTarget`: foundation first, then a non-empty column, then an empty column if
+  the rule allows it and the card is not already at the bottom of its column); cards can also be dragged (pointer events, `dropTarget`). When stock and
   waste are empty and everything is face up, the rest goes up by itself (`autoStep`). Undo is unlimited (in memory).
   "Indiciu" = `findHint`.
 - Win: the cards leave the foundations one by one and bounce off the bottom edge leaving trails (`WinCascade.tsx`,
@@ -75,7 +78,7 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
 - Playwright files are `*.e2e.ts`, never `*.spec.ts` / `*.test.ts` (Vitest would pick those up).
 - UI tests use `data-card` / `data-pile` (`stock`, `waste`, `f0`-`f3`, `t0`-`t6`) / `data-index` / `data-up` on the card
   images, `data-slot` on the empty places, and `data-testid`: `board`, `stock-slot`, `score`, `time`, `new-game`,
-  `undo`, `hint`, `menu-open`, `menu`, `menu-new-game`, `setting-draw`, `setting-scoring`, `setting-timed`, `stats`,
+  `undo`, `hint`, `menu-open`, `menu`, `menu-new-game`, `setting-draw`, `setting-scoring`, `setting-timed`, `setting-empty`, `stats`,
   `stat-played`, `stat-won`, `app-version`, `confirm-new`, `confirm-new-yes`, `toast`, `win-cascade`, `win-dialog`,
   `win-score`, `win-new-game`, `update-reload`, `install`. Renaming one breaks `tests/ui`.
 - Dev server (only if the user asks): `npm run dev -- -p 3012`.

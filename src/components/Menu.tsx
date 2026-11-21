@@ -67,6 +67,16 @@ export function Menu({
             ]}
             onChange={(v) => actions.updateSettings({ timed: v })}
           />
+          <Choice
+            label="Pe o coloană goală poate veni"
+            testId="setting-empty"
+            value={settings.kingOnly}
+            options={[
+              { value: false, label: "Orice carte" },
+              { value: true, label: "Doar Popa (K)" },
+            ]}
+            onChange={(v) => actions.updateSettings({ kingOnly: v })}
+          />
           {rulesDiffer && gameStarted && (
             <div className="flex flex-col gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
               <span>Regulile noi se aplică de la jocul următor.</span>
@@ -141,7 +151,7 @@ export function Menu({
             <p>Scopul: toate cărțile urcă pe cele 4 locuri din dreapta sus, pe culori, de la As la Popă.</p>
             <p>
               Pe coloanele de jos pui cărțile în ordine descrescătoare, alternând roșu cu negru (de exemplu 9 negru pe 10
-              roșu). Pe o coloană goală poate veni doar un Popă (K).
+              roșu). Pe o coloană goală poate veni orice carte, sau doar un Popă (K) dacă alegi asta mai sus, ca în jocul clasic.
             </p>
             <p>Atinge pachetul din stânga sus ca să întorci cărți. Când se termină, atinge locul gol și pachetul o ia de la capăt.</p>
             <p>

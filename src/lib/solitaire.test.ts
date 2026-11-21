@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   autoStep,
+  anyOnEmpty,
   autoTarget,
   canAutoComplete,
   canOnFoundation,
   canOnTableau,
   canRecycle,
   cardOf,
+  DEFAULT_OPTIONS,
   draw,
   findHint,
   isValidGame,
@@ -25,7 +27,9 @@ import {
   type Pile,
 } from "./solitaire";
 
-const STD: Options = { drawCount: 1, scoring: "standard", timed: true };
+// The classic rule (only a king on an empty column) unless a test says otherwise.
+const STD: Options = { drawCount: 1, scoring: "standard", timed: true, kingOnly: true };
+const ANY: Options = { ...STD, kingOnly: false };
 const W: Pile = { kind: "waste" };
 const F = (index: number): Pile => ({ kind: "foundation", index });
 const T = (index: number): Pile => ({ kind: "tableau", index });
@@ -358,6 +362,12 @@ describe("storage shape", () => {
     expect(isValidGame({ ...g, stock: g.stock.slice(1) })).toBe(false);
     expect(isValidGame({ ...g, stock: [g.tableau[0].cards[0], ...g.stock.slice(1)] })).toBe(false);
     expect(isValidGame({ ...g, options: { ...g.options, drawCount: 2 } })).toBe(false);
+    expect(isValidGame({ ...g, options: { ...g.options, kingOnly: "yes" as unknown as boolean } })).toBe(false);
+    // Games saved before the empty-column setting existed have no `kingOnly`: still valid, any card goes.
+    const { kingOnly: _drop, ...old } = g.options;
+    void _drop;
+    expect(isValidGame({ ...g, options: old })).toBe(true);
+    expect(anyOnEmpty({ ...g, options: old })).toBe(true);
   });
 
   it("locates every card", () => {
@@ -367,11 +377,53 @@ describe("storage shape", () => {
   });
 });
 
+describe("empty column rule", () => {
+  // Column 0: a face-down 5 under a face-up 10 of hearts; column 1 empty; column 2: a lone queen.
+  const setup = (options: Options) => {
+    const tab = board({}, options).tableau;
+    tab[0] = { cards: [cardOf("C", 5), cardOf("H", 10)], hidden: 1 };
+    tab[2] = { cards: [cardOf("S", 12)], hidden: 0 };
+    return board({ tableau: tab, waste: [cardOf("D", 7)], wasteFan: 1 }, options);
+  };
+
+  it("by default any card may start an empty column", () => {
+    expect(DEFAULT_OPTIONS.kingOnly).toBe(false);
+    expect(anyOnEmpty(newGame(3))).toBe(true);
+    expect(canOnTableau(cardOf("S", 12), { cards: [], hidden: 0 }, true)).toBe(true);
+    expect(canOnTableau(cardOf("S", 12), { cards: [], hidden: 0 }, false)).toBe(false);
+  });
+
+  it("any card: moves, taps and hints use the empty column", () => {
+    const g = setup(ANY);
+    const n = move(g, T(0), 1, T(1))!;
+    expect(n.tableau[1].cards).toEqual([cardOf("H", 10)]);
+    expect(n.tableau[0].hidden).toBe(0); // the 5 underneath turned over
+    expect(n.score).toBe(5);
+    expect(move(g, W, undefined, T(1))!.tableau[1].cards).toEqual([cardOf("D", 7)]);
+    expect(autoTarget(g, T(0), 1)).toEqual(T(1));
+    expect(autoTarget(g, W)).toEqual(T(1));
+    expect(autoTarget(g, T(2), 0)).toBeNull(); // already at the bottom of its column: moving it gains nothing
+    expect(findHint(g)).toEqual({ from: T(0), index: 1, to: T(1) });
+  });
+
+  it("king only: the same cards may not go there", () => {
+    const g = setup(STD);
+    expect(move(g, T(0), 1, T(1))).toBeNull();
+    expect(move(g, W, undefined, T(1))).toBeNull();
+    expect(autoTarget(g, T(0), 1)).toBeNull();
+    expect(autoTarget(g, W)).toBeNull();
+    expect(findHint(g)?.to.kind).not.toBe("tableau");
+  });
+});
+
 describe("random games", () => {
-  it("keep all 52 cards through hint-driven play, and some of them are won", () => {
+  it.each([
+    ["any card on an empty column", ANY],
+    ["only a king on an empty column", STD],
+  ])("keep all 52 cards through hint-driven play, and some of them are won (%s)", (_name, options) => {
     let wins = 0;
     for (let seed = 1; seed <= 150; seed++) {
-      let g = newGame(seed);
+      let g = newGame(seed, options);
       for (let step = 0; step < 600 && !g.won; step++) {
         const h = findHint(g);
         if (!h) break;
