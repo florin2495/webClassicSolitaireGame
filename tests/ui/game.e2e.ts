@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { autoTarget, canAutoComplete, draw, findHint, move, newGame, type GameState } from "../../src/lib/solitaire";
+import { deadEndBoard, rescueBoard } from "../../src/lib/test-boards";
 import { expectBoard, hitCard, hitStock, loadState, nearWin, openSeed, STD } from "./helpers";
 
 const SEED = 20261121;
@@ -92,6 +93,35 @@ test.describe("Classic Solitaire", () => {
     expect(autoTarget({ ...g, options: { ...g.options, kingOnly: true } }, from)).toBeNull();
     await hitCard(page, card, touch);
     await expectBoard(page, g);
+  });
+
+  test("a lost game says so once; a game that only looks lost does not", async ({ page }, info) => {
+    const touch = info.project.name === "android-chromium";
+    const dialog = page.getByTestId("lost-dialog");
+    // The hint only says "deal a card" here, but a card can come back down from a foundation: not lost.
+    await loadState(page, rescueBoard());
+    await page.waitForTimeout(1500);
+    await expect(dialog).toHaveCount(0);
+
+    const g = deadEndBoard();
+    await loadState(page, g);
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog).toContainText("nu mai poate fi câștigat");
+    await page.getByTestId("lost-close").click();
+    await expect(dialog).toBeHidden();
+    await page.getByTestId("hint").click();
+    await expect(page.getByTestId("toast")).toContainText("nu mai poate fi câștigat");
+    // Dealing more cards in the same lost game does not bring the dialog back.
+    await hitStock(page, g, touch);
+    await page.waitForTimeout(1000);
+    await expect(dialog).toHaveCount(0);
+
+    // "Joc nou" from the dialog deals a fresh game.
+    await loadState(page, deadEndBoard());
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await page.getByTestId("lost-new-game").click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('[data-pile="stock"]')).toHaveCount(24);
   });
 
   test("draw 3 fans three cards, and new game asks first when a game is running", async ({ page }) => {

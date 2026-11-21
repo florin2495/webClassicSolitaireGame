@@ -39,6 +39,12 @@ silently starts a new game).
   the rule allows it and the card is not already at the bottom of its column); cards can also be dragged (pointer events, `dropTarget`). When stock and
   waste are empty and everything is face up, the rest goes up by itself (`autoStep`). Undo is unlimited (in memory).
   "Indiciu" = `findHint`.
+- Game lost (`src/lib/stuck.ts`, `outlook`): when the hint has nothing better than "deal a card", every reachable
+  position is searched (deals, recycles, every legal move incl. foundation to tableau and parts of runs; up to 4000
+  positions, else "unknown" and nothing is shown). No position with more foundation cards or fewer face-down cards =
+  proven lost: dialog "Nu mai sunt mutări" (once per game; "Mă mai uit" / "Joc nou"), the hint then says so too. The
+  user's first idea ("a whole pass of the stock where the hint only says deal") is not used on purpose: it calls games
+  lost that a card taken back down from a foundation still saves (`rescueBoard` in `src/lib/test-boards.ts`).
 - Win: the cards leave the foundations one by one and bounce off the bottom edge leaving trails (`WinCascade.tsx`,
   canvas), a tap skips it, then a result dialog. Every copy in a trail has a black outline; 35% of the cards
   (`SLOW_SHARE` in `src/lib/cascade.ts`, the user's choice) move 1-2 px a step, so their outlines merge into a black band
@@ -82,5 +88,5 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
   images, `data-slot` on the empty places, and `data-testid`: `board`, `stock-slot`, `score`, `time`, `new-game`,
   `undo`, `hint`, `menu-open`, `menu`, `menu-new-game`, `setting-draw`, `setting-scoring`, `setting-timed`, `setting-empty`, `stats`,
   `stat-played`, `stat-won`, `app-version`, `confirm-new`, `confirm-new-yes`, `toast`, `win-cascade`, `win-dialog`,
-  `win-score`, `win-new-game`, `update-reload`, `install`. Renaming one breaks `tests/ui`.
+  `win-score`, `win-new-game`, `lost-dialog`, `lost-close`, `lost-new-game`, `update-reload`, `install`. Renaming one breaks `tests/ui`.
 - Dev server (only if the user asks): `npm run dev -- -p 3012`.

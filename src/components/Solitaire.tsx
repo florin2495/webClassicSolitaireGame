@@ -7,6 +7,7 @@ import { cardPositions, computeLayout, dropTarget, pilePosition, type Layout } f
 import { canInstall, canInstallServer, promptInstall, subscribeInstall } from "@/lib/pwa";
 import { canAutoComplete, canRecycle, findHint, pickCards, samePile, type GameState, type Hint, type Pile } from "@/lib/solitaire";
 import { actions, getServerSnapshot, getSnapshot, subscribe } from "@/lib/store";
+import { outlook, type Outlook } from "@/lib/stuck";
 import { Menu } from "./Menu";
 import { UpdateButton } from "./UpdateButton";
 import { WinCascade, type Launch } from "./WinCascade";
@@ -61,6 +62,10 @@ export function Solitaire() {
   const positions = useMemo(() => (game && layout ? cardPositions(game, layout) : null), [game, layout]);
   const celebrating = !!game && game.won && !game.celebrated;
   const launches = useMemo(() => (game && layout && celebrating ? launchesOf(game, layout) : []), [game, layout, celebrating]);
+  // Game lost (proven by src/lib/stuck.ts, checked when the hint has nothing better than "deal a card").
+  const [lostCheck, setLostCheck] = useState<{ game: GameState; outlook: Outlook } | null>(null);
+  const [lostDismissedSeed, setLostDismissedSeed] = useState<number | null>(null);
+  const lost = !!game && !game.won && lostCheck?.game === game && lostCheck.outlook === "lost";
 
   // Board size.
   useEffect(() => {
@@ -122,6 +127,11 @@ export function Solitaire() {
   function showHint() {
     const g = getSnapshot().game;
     if (g.won) return;
+    if (lost) {
+      setHint(null);
+      flash("Jocul nu mai poate fi câștigat: nicio mutare nu mai ajută. Încearcă „Înapoi” sau un joc nou.");
+      return;
+    }
     const h = findHint(g);
     if (!h) {
       setHint(null);
@@ -153,6 +163,15 @@ export function Solitaire() {
     const id = window.setTimeout(() => run(() => actions.autoStep()), 130);
     return () => window.clearTimeout(id);
   }, [autoComplete, game]);
+
+  // Lost? Only worth the search when the hint has no real move; a moment after the move, so the board updates first.
+  useEffect(() => {
+    if (!game || game.won || autoComplete || lostCheck?.game === game) return;
+    const h = findHint(game);
+    if (h && h.from.kind !== "stock") return;
+    const id = window.setTimeout(() => setLostCheck({ game, outlook: outlook(game) }), 200);
+    return () => window.clearTimeout(id);
+  }, [game, autoComplete, lostCheck]);
 
   // Keyboard (desktop): Ctrl+Z undo, F2 new game, H hint.
   useEffect(() => {
@@ -418,6 +437,23 @@ export function Solitaire() {
               Continuă jocul
             </button>
             <button type="button" className={btnPrimary} onClick={startNewGame} data-testid="confirm-new-yes">
+              Joc nou
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {game && lost && lostDismissedSeed !== game.seed && !menuOpen && !confirmNew && (
+        <Modal title="Nu mai sunt mutări" onClose={() => setLostDismissedSeed(game.seed)} testId="lost-dialog">
+          <p className="mb-4">
+            Am încercat toate mutările posibile, cu toate cărțile din pachet: niciuna nu mai urcă o carte sus și nici nu
+            mai întoarce o carte. Jocul acesta nu mai poate fi câștigat.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className={btnSecondary} onClick={() => setLostDismissedSeed(game.seed)} data-testid="lost-close">
+              Mă mai uit
+            </button>
+            <button type="button" className={btnPrimary} onClick={startNewGame} data-testid="lost-new-game">
               Joc nou
             </button>
           </div>
