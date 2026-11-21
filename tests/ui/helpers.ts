@@ -53,6 +53,12 @@ export async function hitCard(page: Page, card: number, touch: boolean) {
   else await el.click({ position });
 }
 
+/** Click the top card of the stock. The images are in card-number order, so `.last()` is usually a covered card. */
+export async function clickStockTop(page: Page) {
+  const n = await page.locator('[data-pile="stock"]').count();
+  await page.locator(`[data-pile="stock"][data-index="${n - 1}"]`).click({ position: { x: 10, y: 5 } });
+}
+
 export async function hitStock(page: Page, g: GameState, touch: boolean) {
   if (g.stock.length > 0) return hitCard(page, g.stock[g.stock.length - 1], touch);
   const slot = page.getByTestId("stock-slot");

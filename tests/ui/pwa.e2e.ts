@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { autoTarget, draw, move, newGame, type GameState } from "../../src/lib/solitaire";
-import { BASE, expectBoard, openSeed, STD } from "./helpers";
+import { BASE, clickStockTop, expectBoard, openSeed, STD } from "./helpers";
 
 // Desktop Chromium only: service worker, offline start, the update button, and drag & drop with a mouse.
 test.beforeEach(({}, info) => {
@@ -42,7 +42,7 @@ test("works offline once it has been opened", async ({ page, context }) => {
   // Same game as before, and it still plays: the stock turns a card.
   expect(await page.evaluate(() => localStorage.getItem("solitaire:game:v1"))).toBe(saved);
   const before = await page.locator('[data-pile="waste"]').count();
-  await page.locator('[data-pile="stock"]').last().click({ position: { x: 10, y: 5 } });
+  await clickStockTop(page);
   await expect(page.locator('[data-pile="waste"]')).toHaveCount(before + 1);
   await context.setOffline(false);
 });
@@ -50,7 +50,7 @@ test("works offline once it has been opened", async ({ page, context }) => {
 test("shows a separate reload button when a newer version is live, and reloading keeps the game", async ({ page }) => {
   await page.route("**/classicsolitaire/api/version", (route) => route.fulfill({ json: { version: "999.0.0" } }));
   await openSeed(page, 77);
-  await page.locator('[data-pile="stock"]').last().click({ position: { x: 10, y: 5 } });
+  await clickStockTop(page);
   const afterDraw = draw(newGame(77, STD))!;
   await expectBoard(page, afterDraw);
 
@@ -84,7 +84,7 @@ test("drag and drop: a legal drop moves the card, an illegal one puts it back", 
   const to = autoTarget(g, { kind: "waste" })!;
   expect(to.kind).toBe("tableau");
   await openSeed(page, seed);
-  await page.locator('[data-pile="stock"]').last().click({ position: { x: 10, y: 5 } });
+  await clickStockTop(page);
   await expectBoard(page, g);
 
   const wasteCard = g.waste[g.waste.length - 1];
