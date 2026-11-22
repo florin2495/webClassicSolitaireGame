@@ -70,6 +70,7 @@ const sw = await get(`${BASE}/sw.js`);
 check(sw.status === 200 && (sw.headers.get("content-type") ?? "").includes("javascript"), `sw.js -> ${sw.status}`);
 check(sw.headers.get("service-worker-allowed") === "/classicsolitaire", `sw.js Service-Worker-Allowed: ${sw.headers.get("service-worker-allowed")}`);
 check(sw.text.includes(JSON.stringify(version)), "sw.js carries this version (a new deploy = a new worker)");
+check(sw.text.includes("GET_VERSION"), "sw.js answers GET_VERSION (a waiting worker of the page's own version takes over quietly)");
 
 // Feedback validation (never stores anything).
 const fb = async (body) => {

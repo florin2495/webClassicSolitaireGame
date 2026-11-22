@@ -4,7 +4,9 @@ import pkg from "../../../package.json";
 const BASE = "/classicsolitaire";
 
 // GET /classicsolitaire/sw.js - the service worker. Its text contains the app version, so every deploy (version bump)
-// is a new worker: the browser installs it in the background and the page shows "Versiune nouă" (UpdateButton).
+// is a new worker: the browser installs it in the background. It answers GET_VERSION, so UpdateButton can tell a
+// waiting worker of the version the page already runs (network-first HTML: it is activated quietly) from a newer one
+// (then the page shows "Versiune nouă").
 // Offline: the page is cached on install (with every /_next/static file it references), pages are network-first
 // with a 4 s fallback to the cache, hashed /_next/static files are cache-first, /api is never cached.
 // Scope is "/classicsolitaire" (no trailing slash, the URL of the page), hence the Service-Worker-Allowed header.
@@ -42,7 +44,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
+  const type = event.data && event.data.type;
+  if (type === "SKIP_WAITING") self.skipWaiting();
+  else if (type === "GET_VERSION" && event.ports && event.ports[0]) event.ports[0].postMessage({ version: VERSION });
 });
 
 function timeout(ms) {

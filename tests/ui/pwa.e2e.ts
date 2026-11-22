@@ -23,6 +23,26 @@ test("installable: manifest with its own id and scope, icons, service worker scr
   expect(sw.headers()["content-type"]).toContain("javascript");
   expect(sw.headers()["service-worker-allowed"]).toBe("/classicsolitaire");
   expect(await sw.text()).toContain("SKIP_WAITING");
+  expect(await sw.text()).toContain("GET_VERSION");
+});
+
+test("the worker tells its version; a page already at the live version shows no update button", async ({ page, request }) => {
+  const { version } = (await (await request.get(`${BASE}/api/version`)).json()) as { version: string };
+  await page.goto(BASE);
+  await expect(page.locator("[data-card]")).toHaveCount(52);
+  const workerVersion = await page.evaluate(async () => {
+    const reg = await navigator.serviceWorker.ready;
+    return await new Promise<unknown>((resolve) => {
+      const ch = new MessageChannel();
+      ch.port1.onmessage = (e) => resolve((e.data as { version?: unknown }).version);
+      reg.active!.postMessage({ type: "GET_VERSION" }, [ch.port2]);
+    });
+  });
+  expect(workerVersion).toBe(version);
+  await page.reload();
+  await expect(page.locator("[data-card]")).toHaveCount(52);
+  await page.waitForTimeout(3000);
+  await expect(page.getByTestId("update-reload")).toHaveCount(0);
 });
 
 test("works offline once it has been opened", async ({ page, context }) => {

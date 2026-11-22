@@ -1,15 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { APP_VERSION, BASE_PATH } from "@/lib/pwa";
+import { APP_VERSION, BASE_PATH, waitingWorkerAction } from "@/lib/pwa";
 
 /** How often an open game asks for the live version (also on every return to the app). */
 const CHECK_MS = 5 * 60_000;
 
+/** The version a service worker was built with (null: no answer in time, e.g. a worker older than GET_VERSION). */
+function workerVersion(w: ServiceWorker): Promise<string | null> {
+  return new Promise((resolve) => {
+    const ch = new MessageChannel();
+    const timer = window.setTimeout(() => resolve(null), 2000);
+    ch.port1.onmessage = (e: MessageEvent<{ version?: unknown } | null>) => {
+      window.clearTimeout(timer);
+      resolve(typeof e.data?.version === "string" ? e.data.version : null);
+    };
+    try {
+      w.postMessage({ type: "GET_VERSION" }, [ch.port2]);
+    } catch {
+      window.clearTimeout(timer);
+      resolve(null);
+    }
+  });
+}
+
 /**
  * Registers the service worker (offline play) and shows a separate "Versiune nouă" reload button when a newer
  * version is live: either /api/version answers another version than this page was built with, or a new service
- * worker has been installed and is waiting. The game is saved on the device, so reloading loses nothing.
+ * worker of another version is installed and waiting. A waiting worker of the version this page already runs (the
+ * HTML is network-first) is told to take over at once, with no button and no reload.
+ * The game is saved on the device, so reloading loses nothing.
  */
 export function UpdateButton() {
   const [latest, setLatest] = useState<string | null>(null);
@@ -20,12 +40,23 @@ export function UpdateButton() {
     let reg: ServiceWorkerRegistration | null = null;
 
     if ("serviceWorker" in navigator) {
+      const onWaiting = async (w: ServiceWorker) => {
+        const version = await workerVersion(w);
+        if (stopped || w.state === "redundant") return;
+        if (waitingWorkerAction(APP_VERSION, version) === "activate") {
+          // This page already is that version: the worker takes over (fresh offline cache), nothing to reload.
+          setWaiting(null);
+          w.postMessage({ type: "SKIP_WAITING" });
+        } else {
+          setWaiting(w);
+        }
+      };
       const watch = (r: ServiceWorkerRegistration) => {
-        if (r.waiting && navigator.serviceWorker.controller) setWaiting(r.waiting);
+        if (r.waiting && navigator.serviceWorker.controller) void onWaiting(r.waiting);
         r.addEventListener("updatefound", () => {
           const w = r.installing;
           w?.addEventListener("statechange", () => {
-            if (!stopped && w.state === "installed" && navigator.serviceWorker.controller) setWaiting(w);
+            if (!stopped && w.state === "installed" && navigator.serviceWorker.controller) void onWaiting(w);
           });
         });
       };

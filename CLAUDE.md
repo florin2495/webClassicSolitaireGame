@@ -66,9 +66,11 @@ silently starts a new game).
   `/_next/static` file the HTML references; pages are network-first (4 s, then the cache), hashed static files
   cache-first, `/api` never cached. Old caches (`solitaire-<version>`) are deleted on activate.
 - Update button (`UpdateButton.tsx`, in its own strip above the board, never over the cards): shown when
-  `GET /classicsolitaire/api/version` differs from the bundled version or a new worker is waiting; it tells the worker to
-  take over (`SKIP_WAITING`) and reloads. Checked on load, on every return to the app and every 5 minutes. The game
-  is saved, so reloading loses nothing.
+  `GET /classicsolitaire/api/version` differs from the bundled version or a new worker of another version is waiting;
+  it tells the worker to take over (`SKIP_WAITING`) and reloads. The worker answers `GET_VERSION` (MessageChannel): a
+  waiting worker of the version the page already runs (the HTML is network-first, and a reload never activates a
+  waiting worker) gets `SKIP_WAITING` at once, with no button and no reload (`waitingWorkerAction` in `src/lib/pwa.ts`).
+  Checked on load, on every return to the app and every 5 minutes. The game is saved, so reloading loses nothing.
 
 ## Testing (GitHub Actions, manual only)
 All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` only), never locally (user's rule,

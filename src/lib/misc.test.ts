@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { checkFeedback } from "./feedback";
 import { formatTime } from "./format";
+import { waitingWorkerAction } from "./pwa";
+
+describe("waiting service worker", () => {
+  it("takes over quietly when the page already runs its version, else the reload button is offered", () => {
+    expect(waitingWorkerAction("0.1.7", "0.1.7")).toBe("activate");
+    expect(waitingWorkerAction("0.1.7", "0.1.8")).toBe("offer");
+    // No answer (a worker from before GET_VERSION): the reload is offered, as before.
+    expect(waitingWorkerAction("0.1.7", null)).toBe("offer");
+  });
+});
 
 describe("formatTime", () => {
   it("formats minutes and hours", () => {
