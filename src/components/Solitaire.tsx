@@ -7,7 +7,7 @@ import { cardPositions, computeLayout, dropTarget, pilePosition, type Layout } f
 import { canInstall, canInstallServer, promptInstall, subscribeInstall } from "@/lib/pwa";
 import { canAutoComplete, canRecycle, findHint, pickCards, samePile, type GameState, type Hint, type Pile } from "@/lib/solitaire";
 import { actions, getServerSnapshot, getSnapshot, subscribe } from "@/lib/store";
-import { outlook, type Outlook } from "@/lib/stuck";
+import { outlook, positionKey, type Outlook } from "@/lib/stuck";
 import { Menu } from "./Menu";
 import { UpdateButton } from "./UpdateButton";
 import { WinCascade, type Launch } from "./WinCascade";
@@ -63,9 +63,11 @@ export function Solitaire() {
   const celebrating = !!game && game.won && !game.celebrated;
   const launches = useMemo(() => (game && layout && celebrating ? launchesOf(game, layout) : []), [game, layout, celebrating]);
   // Game lost (proven by src/lib/stuck.ts, checked when the hint has nothing better than "deal a card").
-  const [lostCheck, setLostCheck] = useState<{ game: GameState; outlook: Outlook } | null>(null);
+  // Keyed on the position, not on the game object: the clock makes a new game object every second.
+  const posKey = useMemo(() => (game ? positionKey(game) : null), [game]);
+  const [lostCheck, setLostCheck] = useState<{ key: string; outlook: Outlook } | null>(null);
   const [lostDismissedSeed, setLostDismissedSeed] = useState<number | null>(null);
-  const lost = !!game && !game.won && lostCheck?.game === game && lostCheck.outlook === "lost";
+  const lost = !!game && !game.won && posKey !== null && lostCheck?.key === posKey && lostCheck.outlook === "lost";
 
   // Board size.
   useEffect(() => {
@@ -165,13 +167,17 @@ export function Solitaire() {
   }, [autoComplete, game]);
 
   // Lost? Only worth the search when the hint has no real move; a moment after the move, so the board updates first.
+  // Runs once per position: a clock tick changes the game object but not `posKey`.
   useEffect(() => {
-    if (!game || game.won || autoComplete || lostCheck?.game === game) return;
-    const h = findHint(game);
+    if (posKey === null || autoComplete || lostCheck?.key === posKey) return;
+    const g = getSnapshot().game;
+    if (g.won) return;
+    const h = findHint(g);
     if (h && h.from.kind !== "stock") return;
-    const id = window.setTimeout(() => setLostCheck({ game, outlook: outlook(game) }), 200);
+    // A move before the timeout changes posKey and cancels it, so the game read then is still this position.
+    const id = window.setTimeout(() => setLostCheck({ key: posKey, outlook: outlook(getSnapshot().game) }), 200);
     return () => window.clearTimeout(id);
-  }, [game, autoComplete, lostCheck]);
+  }, [posKey, autoComplete, lostCheck]);
 
   // Keyboard (desktop): Ctrl+Z undo, F2 new game, H hint.
   useEffect(() => {

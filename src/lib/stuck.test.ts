@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { draw, findHint, isValidGame, move, newGame } from "./solitaire";
-import { outlook, successors } from "./stuck";
+import { draw, findHint, isValidGame, move, newGame, tick } from "./solitaire";
+import { outlook, positionKey, successors } from "./stuck";
 import { deadEndBoard, rescueBoard } from "./test-boards";
 
 describe("game lost", () => {
@@ -47,6 +47,19 @@ describe("game lost", () => {
     // A deal, and the 5♥ down onto either black 6.
     expect(next).toHaveLength(3);
     for (const n of next) expect(isValidGame(n)).toBe(true);
+  });
+
+  it("the position key ignores the clock and the score, so a tick does not re-run the search", () => {
+    const g = deadEndBoard();
+    const later = tick(g, 25_000);
+    expect(later).not.toBe(g);
+    expect(later.elapsedMs).toBe(g.elapsedMs + 25_000);
+    expect(positionKey(later)).toBe(positionKey(g));
+    expect(positionKey({ ...g, score: 999, moves: 7 })).toBe(positionKey(g));
+    // A deal, a different rule or a recycle count is a different position.
+    expect(positionKey(draw(g)!)).not.toBe(positionKey(g));
+    expect(positionKey({ ...g, options: { ...g.options, kingOnly: true } })).not.toBe(positionKey(g));
+    expect(positionKey({ ...g, recycles: 1 })).not.toBe(positionKey(g));
   });
 
   it("a won game is not lost", () => {

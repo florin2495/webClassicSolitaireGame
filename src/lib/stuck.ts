@@ -41,6 +41,19 @@ export function successors(s: GameState): GameState[] {
   return out;
 }
 
+/**
+ * The position as far as `outlook` is concerned: the cards, the recycles and the rules, not the clock or the score.
+ * The page keys its "lost?" check on this, so the clock ticking every second does not re-run the search.
+ */
+export function positionKey(g: GameState): string {
+  const o = g.options;
+  return (
+    `${o.drawCount}${o.scoring}${o.kingOnly === true ? "K" : ""}/${g.won ? "W" : ""}${g.recycles}/` +
+    `${g.stock.join(",")}/${g.waste.join(",")}/${g.foundations.map((f) => f.join(",")).join("|")}/` +
+    `${g.tableau.map((c) => `${c.hidden}:${c.cards.join(",")}`).join("|")}`
+  );
+}
+
 export type Outlook = "open" | "lost" | "unknown";
 
 /**

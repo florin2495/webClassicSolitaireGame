@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { newGame } from "./solitaire";
-import { actions, EMPTY_STATS, getSnapshot, parseSettings, parseStats, updateStats } from "./store";
+import { actions, EMPTY_STATS, getSnapshot, parseSettings, parseStats, subscribe, updateStats } from "./store";
 
 // Runs in Node: no window / localStorage, so the store keeps everything in memory (the same code path as blocked storage).
 describe("store", () => {
@@ -67,6 +67,28 @@ describe("store", () => {
     actions.newGame(8);
     expect(getSnapshot().stats.streak).toBe(0);
     expect(getSnapshot().stats.played).toBe(1);
+  });
+
+  it("the clock re-renders the page only when the timer is on screen", () => {
+    let calls = 0;
+    const off = subscribe(() => calls++);
+    actions.tick(1000);
+    expect(calls).toBe(0); // not started: the clock does not run
+    actions.draw();
+    calls = 0;
+    actions.tick(1000);
+    expect(calls).toBe(1);
+    expect(getSnapshot().game.elapsedMs).toBe(1000);
+    actions.updateSettings({ timed: false });
+    actions.newGame(42);
+    actions.draw();
+    calls = 0;
+    actions.tick(1000);
+    actions.tick(1000);
+    expect(calls).toBe(0);
+    // Still counted (and saved) for the best time.
+    expect(getSnapshot().game.elapsedMs).toBe(2000);
+    off();
   });
 
   it("a tap that fits nowhere leaves the game unchanged", () => {

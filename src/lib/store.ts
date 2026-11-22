@@ -138,13 +138,14 @@ export function subscribe(cb: () => void): () => void {
   };
 }
 
-function commit(next: Snapshot, saveGame = true) {
+/** `notify` false: saved and returned by the next getSnapshot(), but nothing on screen needs to change now. */
+function commit(next: Snapshot, saveGame = true, notify = true) {
   const prev = snap;
   snap = next;
   if (saveGame) writeJson(KEY_GAME, next.game);
   if (prev?.settings !== next.settings) writeJson(KEY_SETTINGS, next.settings);
   if (prev?.stats !== next.stats) writeJson(KEY_STATS, next.stats);
-  listeners.forEach((l) => l());
+  if (notify) listeners.forEach((l) => l());
 }
 
 /** Statistics after the game went from `prev` to `next`. */
@@ -202,7 +203,8 @@ export const actions = {
   tick(ms: number) {
     const cur = getSnapshot();
     const game = tick(cur.game, ms);
-    if (game !== cur.game) commit({ ...cur, game });
+    // Without the timer the clock is not on screen (it still counts, for the best time): no re-render every second.
+    if (game !== cur.game) commit({ ...cur, game }, true, game.options.timed);
   },
   newGame(seed: number = randomSeed()) {
     const cur = getSnapshot();

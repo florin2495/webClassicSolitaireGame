@@ -107,6 +107,11 @@ test.describe("Classic Solitaire", () => {
     await loadState(page, g);
     await expect(dialog).toBeVisible({ timeout: 5000 });
     await expect(dialog).toContainText("nu mai poate fi câștigat");
+    // It stays put while the clock runs (it used to vanish for 200 ms every second).
+    for (let i = 0; i < 25; i++) {
+      expect(await dialog.isVisible()).toBe(true);
+      await page.waitForTimeout(100);
+    }
     await page.getByTestId("lost-close").click();
     await expect(dialog).toBeHidden();
     await page.getByTestId("hint").click();
