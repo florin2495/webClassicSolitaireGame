@@ -48,6 +48,20 @@ test.describe("Classic Solitaire", () => {
     await expectBoard(page, g);
   });
 
+  test("two quick taps on the stock deal two cards (the card still sliding does not catch the second tap)", async ({ page }, info) => {
+    const touch = info.project.name === "android-chromium";
+    await openSeed(page, SEED);
+    const g = newGame(SEED, STD);
+    const box = (await page.locator(`[data-card="${g.stock[g.stock.length - 1]}"]`).boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    for (let i = 0; i < 2; i++) {
+      if (touch) await page.touchscreen.tap(x, y);
+      else await page.mouse.click(x, y);
+    }
+    await expectBoard(page, draw(draw(g)!)!);
+  });
+
   test("a tap on a card that fits nowhere leaves everything in place", async ({ page }, info) => {
     const touch = info.project.name === "android-chromium";
     await openSeed(page, SEED);

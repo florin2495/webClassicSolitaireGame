@@ -375,7 +375,8 @@ export function Solitaire() {
               const dragging = drag?.cards.includes(c) ?? false;
               const x = p.x + (dragging && drag ? drag.dx : 0);
               const y = p.y + (dragging && drag ? drag.dy : 0);
-              const z = p.z + (dragging ? 3000 : lifted.includes(c) ? 1000 : 0);
+              const flying = lifted.includes(c);
+              const z = p.z + (dragging ? 3000 : flying ? 1000 : 0);
               const classes = ["card", dragging && "dragging", hintCards.has(c) && "hint", shake === c && "shake"].filter(Boolean).join(" ");
               return (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -394,6 +395,9 @@ export function Solitaire() {
                     height: layout.cardH,
                     transform: `translate3d(${x}px, ${y}px, 0)`,
                     zIndex: z,
+                    // A card still sliding (drawn on top) lets taps through to what is under it: a quick second tap
+                    // on the stock deals again instead of catching the card just dealt.
+                    pointerEvents: flying ? "none" : undefined,
                     visibility: launched.includes(c) ? "hidden" : undefined,
                   }}
                 />
