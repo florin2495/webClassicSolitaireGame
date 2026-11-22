@@ -60,7 +60,7 @@ export function Solitaire() {
   const game = snap?.game ?? null;
   const layout = useMemo(() => (size ? computeLayout(size.w, size.h) : null), [size]);
   const positions = useMemo(() => (game && layout ? cardPositions(game, layout) : null), [game, layout]);
-  const celebrating = !!game && game.won && !game.celebrated;
+  const celebrating = !!game && game.won && !!snap?.cascading;
   const launches = useMemo(() => (game && layout && celebrating ? launchesOf(game, layout) : []), [game, layout, celebrating]);
   // Game lost (proven by src/lib/stuck.ts, checked when the hint has nothing better than "deal a card").
   // Keyed on the position, not on the game object: the clock makes a new game object every second.
@@ -411,7 +411,7 @@ export function Solitaire() {
                 onLaunch={(card) => setLaunched((l) => [...l, card])}
                 onDone={() => {
                   setLaunched([]);
-                  actions.markCelebrated();
+                  actions.endCascade();
                 }}
               />
             )}
@@ -472,7 +472,7 @@ export function Solitaire() {
         </Modal>
       )}
 
-      {game && game.won && game.celebrated && snap && (
+      {game && game.won && !celebrating && snap && (
         <Modal title="Felicitări! 🎉" onClose={startNewGame} testId="win-dialog">
           <p className="mb-1 text-lg font-semibold">Ai câștigat!</p>
           <dl className="mb-4 grid grid-cols-2 gap-y-1 text-sm">

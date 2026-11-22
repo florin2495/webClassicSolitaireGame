@@ -35,6 +35,9 @@ export interface Snapshot {
   settings: Settings;
   stats: Stats;
   canUndo: boolean;
+  /** The win animation is running. In memory only: the saved game is marked `celebrated` the moment it is won, so a
+   *  reload during the animation goes straight to the result. */
+  cascading: boolean;
 }
 
 export const KEY_GAME = "solitaire:game:v1";
@@ -116,8 +119,10 @@ function load(): Snapshot {
   const fixed = seedFromUrl();
   if (fixed?.draw) settings = { ...settings, drawCount: fixed.draw };
   const saved = readJson(KEY_GAME);
-  const game = fixed ? newGame(fixed.seed, optionsOf(settings)) : isValidGame(saved) ? saved : newGame(randomSeed(), optionsOf(settings));
-  const next = { game, settings, stats, canUndo: false };
+  let game = fixed ? newGame(fixed.seed, optionsOf(settings)) : isValidGame(saved) ? saved : newGame(randomSeed(), optionsOf(settings));
+  // Won but not celebrated: saved during the animation by a version before 0.1.7. Straight to the result.
+  if (game.won && !game.celebrated) game = { ...game, celebrated: true };
+  const next = { game, settings, stats, canUndo: false, cascading: false };
   writeJson(KEY_GAME, game);
   writeJson(KEY_SETTINGS, settings);
   return next;
@@ -180,7 +185,13 @@ function apply(next: GameState | null): boolean {
   const cur = getSnapshot();
   history.push(cur.game);
   if (history.length > HISTORY_MAX) history = history.slice(-HISTORY_MAX);
-  commit({ ...cur, game: next, stats: updateStats(cur.stats, cur.game, next), canUndo: !next.won });
+  const stats = updateStats(cur.stats, cur.game, next);
+  if (next.won && !cur.game.won) {
+    // Won: the stats and `celebrated` are saved now; the animation runs from memory only (a reload skips it).
+    commit({ ...cur, game: { ...next, celebrated: true }, stats, canUndo: false, cascading: true });
+  } else {
+    commit({ ...cur, game: next, stats, canUndo: !next.won });
+  }
   return true;
 }
 
@@ -219,7 +230,7 @@ export const actions = {
     // Leaving a started, unfinished game breaks the winning streak.
     const stats = cur.game.started && !cur.game.won ? { ...cur.stats, streak: 0 } : cur.stats;
     history = [];
-    commit({ ...cur, stats, game: newGame(seed, optionsOf(cur.settings)), canUndo: false });
+    commit({ ...cur, stats, game: newGame(seed, optionsOf(cur.settings)), canUndo: false, cascading: false });
   },
   /** Draw/scoring/timer changes apply to the next deal (right away when no card has moved yet).
    *  The empty-column rule applies at once, also to the undo history (an undo must not bring the old rule back). */
@@ -245,9 +256,10 @@ export const actions = {
     const cur = getSnapshot();
     if (!cur.game.lostDismissed) commit({ ...cur, game: { ...cur.game, lostDismissed: true } });
   },
-  markCelebrated() {
+  /** The win animation finished or was tapped away: show the result. */
+  endCascade() {
     const cur = getSnapshot();
-    if (cur.game.won && !cur.game.celebrated) commit({ ...cur, game: { ...cur.game, celebrated: true } });
+    if (cur.cascading) commit({ ...cur, cascading: false }, false);
   },
   resetStats() {
     const cur = getSnapshot();

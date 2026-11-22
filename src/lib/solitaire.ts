@@ -49,7 +49,8 @@ export interface GameState {
   /** First move made: the clock runs and the game counts in the statistics. */
   started: boolean;
   won: boolean;
-  /** The win animation has been shown (or skipped). */
+  /** The win has been celebrated: set the moment the game is won (src/lib/store.ts), so a reload during the win
+   *  animation goes straight to the result instead of replaying it. */
   celebrated: boolean;
   /** The player closed the "no more moves" dialog ("Mă mai uit"): not shown again for this game, also after a reload.
    *  Missing in games saved before 0.1.7 = not closed. */

@@ -183,6 +183,10 @@ test.describe("Classic Solitaire", () => {
     await loadState(page, nearWin());
     await expect(page.getByTestId("win-cascade")).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('[data-pile^="f"]')).toHaveCount(52);
+    // The text stays readable over the trails: on its own dark background, above the canvas.
+    const text = page.getByTestId("win-cascade-text");
+    await expect(text).toBeVisible();
+    expect(await text.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
     await page.waitForTimeout(1500);
     await page.getByTestId("win-cascade").click();
     const dialog = page.getByTestId("win-dialog");
@@ -199,6 +203,20 @@ test.describe("Classic Solitaire", () => {
     await page.getByTestId("win-new-game").click();
     await expect(page.getByTestId("win-dialog")).toBeHidden();
     await expect(page.locator('[data-pile="stock"]')).toHaveCount(24);
+  });
+
+  test("a reload during the win animation goes straight to the result, the win counted once", async ({ page }) => {
+    await loadState(page, nearWin());
+    await expect(page.getByTestId("win-cascade")).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(500);
+    await page.reload();
+    await expect(page.locator("[data-card]")).toHaveCount(52);
+    await expect(page.getByTestId("win-dialog")).toBeVisible();
+    await expect(page.getByTestId("win-cascade")).toHaveCount(0);
+    await expect(page.getByTestId("win-dialog")).toContainText("1 din 1");
+    await page.reload();
+    await expect(page.getByTestId("win-dialog")).toBeVisible();
+    await expect(page.getByTestId("win-dialog")).toContainText("1 din 1");
   });
 
   test("menu: rules for the next game, card backs, statistics, version", async ({ page }) => {

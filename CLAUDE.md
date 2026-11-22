@@ -50,7 +50,9 @@ silently starts a new game).
 - Win: the cards leave the foundations one by one and bounce off the bottom edge leaving trails (`WinCascade.tsx`,
   canvas), a tap skips it, then a result dialog. Every copy in a trail has a black outline; 35% of the cards
   (`SLOW_SHARE` in `src/lib/cascade.ts`, the user's choice) move 1-2 px a step, so their outlines merge into a black band
-  like in the original. `celebrated` in the saved game stops a replay after a reload.
+  like in the original. `celebrated` is saved the moment the game is won (the animation itself runs from memory,
+  `Snapshot.cascading`), so a reload during or after the cascade goes straight to the result (stats counted once, at
+  the win). The "Ai câștigat! Atinge ecranul…" text sits on a dark pill above the trails.
 - Card art is drawn in `src/lib/cards.ts` as SVG (our own design, not copied from any other game). Suits are SVG
   shapes, never the ♠♥♦♣ characters (Android may draw those as emoji). Three backs (blue, red, green).
 - Layout: `src/lib/layout.ts`, 7 columns across the width, long columns squeezed to stay on screen.
@@ -91,6 +93,6 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
 - UI tests use `data-card` / `data-pile` (`stock`, `waste`, `f0`-`f3`, `t0`-`t6`) / `data-index` / `data-up` on the card
   images, `data-slot` on the empty places, and `data-testid`: `board`, `stock-slot`, `score`, `time`, `new-game`,
   `undo`, `hint`, `menu-open`, `menu`, `menu-new-game`, `setting-draw`, `setting-scoring`, `setting-timed`, `setting-empty`, `stats`,
-  `stat-played`, `stat-won`, `app-version`, `confirm-new`, `confirm-new-yes`, `stats-reset`, `confirm-reset`, `confirm-reset-no`, `confirm-reset-yes`, `toast`, `win-cascade`, `win-dialog`,
+  `stat-played`, `stat-won`, `app-version`, `confirm-new`, `confirm-new-yes`, `stats-reset`, `confirm-reset`, `confirm-reset-no`, `confirm-reset-yes`, `toast`, `win-cascade`, `win-cascade-text`, `win-dialog`,
   `win-score`, `win-new-game`, `lost-dialog`, `lost-close`, `lost-new-game`, `update-reload`, `install`. Renaming one breaks `tests/ui`.
 - Dev server (only if the user asks): `npm run dev -- -p 3012`.

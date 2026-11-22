@@ -120,9 +120,12 @@ export function WinCascade({
   return (
     <div className="absolute inset-0 z-[5000]" onPointerDown={() => callbacks.current.onDone()} data-testid="win-cascade">
       <canvas ref={canvasRef} className="h-full w-full" aria-label="Ai câștigat!" />
-      <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-sm font-semibold text-white/90 drop-shadow">
-        Ai câștigat! Atinge ecranul pentru a continua.
-      </p>
+      {/* On a dark pill above the canvas, so the trails (white cards) never hide it. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-3">
+        <p className="rounded-full bg-black/80 px-4 py-2 text-center text-sm font-semibold text-white shadow-lg" data-testid="win-cascade-text">
+          Ai câștigat! Atinge ecranul pentru a continua.
+        </p>
+      </div>
     </div>
   );
 }
