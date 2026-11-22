@@ -84,7 +84,11 @@ test("shows a separate reload button when a newer version is live, and reloading
 
 /** Drag a card with the mouse from its top strip to the middle of another element. */
 async function dragCard(page: Page, card: number, onto: string) {
-  const from = (await page.locator(`[data-card="${card}"]`).boundingBox())!;
+  // A card still sliding after a move lets pointers through (a quick second stock tap deals again), so wait until it
+  // has landed before grabbing it.
+  const el = page.locator(`[data-card="${card}"]`);
+  await expect(el).not.toHaveCSS("pointer-events", "none");
+  const from = (await el.boundingBox())!;
   const to = (await page.locator(onto).boundingBox())!;
   await page.mouse.move(from.x + from.width / 2, from.y + 6);
   await page.mouse.down();
