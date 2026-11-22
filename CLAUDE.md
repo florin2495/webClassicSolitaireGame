@@ -91,6 +91,6 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
 - UI tests use `data-card` / `data-pile` (`stock`, `waste`, `f0`-`f3`, `t0`-`t6`) / `data-index` / `data-up` on the card
   images, `data-slot` on the empty places, and `data-testid`: `board`, `stock-slot`, `score`, `time`, `new-game`,
   `undo`, `hint`, `menu-open`, `menu`, `menu-new-game`, `setting-draw`, `setting-scoring`, `setting-timed`, `setting-empty`, `stats`,
-  `stat-played`, `stat-won`, `app-version`, `confirm-new`, `confirm-new-yes`, `toast`, `win-cascade`, `win-dialog`,
+  `stat-played`, `stat-won`, `app-version`, `confirm-new`, `confirm-new-yes`, `stats-reset`, `confirm-reset`, `confirm-reset-no`, `confirm-reset-yes`, `toast`, `win-cascade`, `win-dialog`,
   `win-score`, `win-new-game`, `lost-dialog`, `lost-close`, `lost-new-game`, `update-reload`, `install`. Renaming one breaks `tests/ui`.
 - Dev server (only if the user asks): `npm run dev -- -p 3012`.

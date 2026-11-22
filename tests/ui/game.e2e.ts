@@ -213,6 +213,23 @@ test.describe("Classic Solitaire", () => {
     await page.getByTestId("setting-draw").getByRole("button", { name: "Câte 3 cărți" }).click();
     await page.getByTestId("menu-new-game").click();
     await expect(menu).toBeHidden();
+
+    // Wiping the statistics asks first (in the app, not a browser dialog); "Renunță" keeps them.
+    await page.getByTestId("menu-open").click();
+    await expect(page.getByTestId("stat-played")).toHaveText("1");
+    await page.getByTestId("stats-reset").click();
+    await expect(page.getByTestId("confirm-reset")).toBeVisible();
+    await page.getByTestId("confirm-reset-no").click();
+    await expect(page.getByTestId("confirm-reset")).toBeHidden();
+    await expect(menu).toBeVisible();
+    await expect(page.getByTestId("stat-played")).toHaveText("1");
+    await page.getByTestId("stats-reset").click();
+    await page.getByTestId("confirm-reset-yes").click();
+    await expect(page.getByTestId("confirm-reset")).toBeHidden();
+    await expect(page.getByTestId("stat-played")).toHaveText("0");
+    await expect(page.getByTestId("stat-won")).toHaveText("0 (0%)");
+    await page.getByRole("button", { name: "Închide" }).click();
+    await expect(menu).toBeHidden();
     const stockTop = page.locator('[data-pile="stock"][data-index="23"]');
     await stockTop.click({ position: { x: 10, y: 5 } });
     await expect(page.locator('[data-pile="waste"]')).toHaveCount(3);
