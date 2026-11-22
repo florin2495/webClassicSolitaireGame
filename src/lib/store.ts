@@ -149,7 +149,7 @@ function commit(next: Snapshot, saveGame = true, notify = true) {
   if (notify) listeners.forEach((l) => l());
 }
 
-/** Statistics after the game went from `prev` to `next`. */
+/** Statistics after the game went from `prev` to `next`. Never more games won than played. */
 export function updateStats(stats: Stats, prev: GameState, next: GameState): Stats {
   let s = stats;
   if (!prev.started && next.started) s = { ...s, played: s.played + 1 };
@@ -157,6 +157,7 @@ export function updateStats(stats: Stats, prev: GameState, next: GameState): Sta
     const streak = s.streak + 1;
     s = {
       ...s,
+      played: Math.max(s.played, s.won + 1),
       won: s.won + 1,
       streak,
       bestStreak: Math.max(s.bestStreak, streak),
@@ -165,6 +166,12 @@ export function updateStats(stats: Stats, prev: GameState, next: GameState): Sta
     };
   }
   return s;
+}
+
+/** Statistics wiped by the player. A game already started counts as played (it is on the board, and a win of it
+ *  must not show "1 won of 0 played"). */
+export function clearedStats(game: GameState): Stats {
+  return { ...EMPTY_STATS, played: game.started && !game.won ? 1 : 0 };
 }
 
 /** Apply a new game state as a player move (undoable). */
@@ -239,6 +246,6 @@ export const actions = {
   },
   resetStats() {
     const cur = getSnapshot();
-    commit({ ...cur, stats: { ...EMPTY_STATS } }, false);
+    commit({ ...cur, stats: clearedStats(cur.game) }, false);
   },
 };

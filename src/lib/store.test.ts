@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { newGame } from "./solitaire";
-import { actions, EMPTY_STATS, getSnapshot, parseSettings, parseStats, subscribe, updateStats } from "./store";
+import { actions, clearedStats, EMPTY_STATS, getSnapshot, parseSettings, parseStats, subscribe, updateStats } from "./store";
 
 // Runs in Node: no window / localStorage, so the store keeps everything in memory (the same code path as blocked storage).
 describe("store", () => {
@@ -62,6 +62,19 @@ describe("store", () => {
     expect(parseSettings({ kingOnly: "yes" }).kingOnly).toBe(false);
   });
 
+  it("wiping the stats keeps the game in progress counted as played", () => {
+    actions.resetStats();
+    expect(getSnapshot().stats.played).toBe(0);
+    actions.draw();
+    expect(getSnapshot().stats.played).toBe(1);
+    actions.resetStats();
+    expect(getSnapshot().stats).toEqual({ ...EMPTY_STATS, played: 1 });
+    // Next game counts on top of it.
+    actions.newGame(9);
+    actions.draw();
+    expect(getSnapshot().stats.played).toBe(2);
+  });
+
   it("an abandoned game breaks the winning streak", () => {
     actions.draw();
     actions.newGame(8);
@@ -112,6 +125,19 @@ describe("stats", () => {
     expect(s).toMatchObject({ won: 1, streak: 1, bestStreak: 1, bestScore: 900, bestTimeMs: 120_000 });
     s = updateStats(s, started, { ...started, won: true, score: 500, elapsedMs: 90_000 });
     expect(s).toMatchObject({ won: 2, streak: 2, bestScore: 900, bestTimeMs: 90_000 });
+  });
+
+  it("wiping the stats during a started game, then winning it: never more won than played", () => {
+    const g = newGame(1);
+    const started = { ...g, started: true };
+    expect(clearedStats(g)).toEqual(EMPTY_STATS);
+    expect(clearedStats(started)).toEqual({ ...EMPTY_STATS, played: 1 });
+    expect(clearedStats({ ...started, won: true })).toEqual(EMPTY_STATS);
+    // The win of that game after the wipe: 1 of 1.
+    const s = updateStats(clearedStats(started), started, { ...started, won: true, score: 100, elapsedMs: 60_000 });
+    expect(s).toMatchObject({ played: 1, won: 1 });
+    // Even from stats that lost the played count somehow, a win never leaves won > played.
+    expect(updateStats(EMPTY_STATS, started, { ...started, won: true })).toMatchObject({ played: 1, won: 1 });
   });
 
   it("reads back stored settings and stats defensively", () => {
