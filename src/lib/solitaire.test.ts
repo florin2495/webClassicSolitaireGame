@@ -412,6 +412,12 @@ describe("storage shape", () => {
     void _drop;
     expect(isValidGame({ ...g, options: old })).toBe(true);
     expect(anyOnEmpty({ ...g, options: old })).toBe(true);
+    // The closed "no more moves" dialog is saved with the game; games saved before have no such field.
+    expect(isValidGame({ ...g, lostDismissed: true })).toBe(true);
+    expect(isValidGame({ ...g, lostDismissed: false })).toBe(true);
+    expect(isValidGame(JSON.parse(JSON.stringify({ ...g, lostDismissed: true })))).toBe(true);
+    expect(isValidGame({ ...g, lostDismissed: "yes" as unknown as boolean })).toBe(false);
+    expect("lostDismissed" in newGame(5)).toBe(false);
   });
 
   it("locates every card", () => {

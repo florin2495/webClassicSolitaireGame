@@ -51,6 +51,9 @@ export interface GameState {
   won: boolean;
   /** The win animation has been shown (or skipped). */
   celebrated: boolean;
+  /** The player closed the "no more moves" dialog ("Mă mai uit"): not shown again for this game, also after a reload.
+   *  Missing in games saved before 0.1.7 = not closed. */
+  lostDismissed?: boolean;
 }
 
 export type Pile =
@@ -372,7 +375,10 @@ export function tick(s: GameState, ms: number): GameState {
  */
 export function undoTo(prev: GameState, cur: GameState): GameState {
   const penalty = timePenalty(prev.options, prev.elapsedMs, cur.elapsedMs);
-  return { ...prev, elapsedMs: cur.elapsedMs, score: penalty > 0 ? Math.max(0, prev.score - penalty) : prev.score, started: true };
+  const n: GameState = { ...prev, elapsedMs: cur.elapsedMs, score: penalty > 0 ? Math.max(0, prev.score - penalty) : prev.score, started: true };
+  // The "no more moves" dialog stays closed for the whole game.
+  if (cur.lostDismissed) n.lostDismissed = true;
+  return n;
 }
 
 export interface Hint {
@@ -443,6 +449,7 @@ export function isValidGame(x: unknown): x is GameState {
   if (s.options.drawCount !== 1 && s.options.drawCount !== 3) return false;
   if (!["standard", "vegas", "none"].includes(s.options.scoring)) return false;
   if (s.options.kingOnly !== undefined && typeof s.options.kingOnly !== "boolean") return false;
+  if (s.lostDismissed !== undefined && typeof s.lostDismissed !== "boolean") return false;
   if (!Array.isArray(s.stock) || !Array.isArray(s.waste) || !Array.isArray(s.foundations) || !Array.isArray(s.tableau)) return false;
   if (s.foundations.length !== 4 || s.tableau.length !== 7) return false;
   for (const n of [s.wasteFan, s.score, s.bonus, s.recycles, s.moves, s.elapsedMs]) if (typeof n !== "number" || !Number.isFinite(n)) return false;

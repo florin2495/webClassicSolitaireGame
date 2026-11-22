@@ -42,7 +42,9 @@ silently starts a new game).
 - Game lost (`src/lib/stuck.ts`, `outlook`): when the hint has nothing better than "deal a card", every reachable
   position is searched (deals, recycles, every legal move incl. foundation to tableau and parts of runs; up to 4000
   positions, else "unknown" and nothing is shown). No position with more foundation cards or fewer face-down cards =
-  proven lost: dialog "Nu mai sunt mutări" (once per game; "Mă mai uit" / "Joc nou"), the hint then says so too. The
+  proven lost: dialog "Nu mai sunt mutări" (once per game; "Mă mai uit" / "Joc nou"; closing it is saved with the game as the optional
+  `lostDismissed`, so a reload does not bring it back), the hint then says so too (it suggests "Înapoi" only when there
+  is something to undo: the history is not kept across a reload). The
   user's first idea ("a whole pass of the stock where the hint only says deal") is not used on purpose: it calls games
   lost that a card taken back down from a foundation still saves (`rescueBoard` in `src/lib/test-boards.ts`).
 - Win: the cards leave the foundations one by one and bounce off the bottom edge leaving trails (`WinCascade.tsx`,

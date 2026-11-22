@@ -114,12 +114,23 @@ test.describe("Classic Solitaire", () => {
     }
     await page.getByTestId("lost-close").click();
     await expect(dialog).toBeHidden();
+    // Closed for good: a reload does not bring it back.
+    await page.reload();
+    await expect(page.locator("[data-card]")).toHaveCount(52);
+    await page.waitForTimeout(1500);
+    await expect(dialog).toHaveCount(0);
+    // Nothing to undo after a reload: the hint does not suggest "Înapoi".
+    await expect(page.getByTestId("undo")).toBeDisabled();
     await page.getByTestId("hint").click();
     await expect(page.getByTestId("toast")).toContainText("nu mai poate fi câștigat");
+    await expect(page.getByTestId("toast")).not.toContainText("Înapoi");
     // Dealing more cards in the same lost game does not bring the dialog back.
     await hitStock(page, g, touch);
     await page.waitForTimeout(1000);
     await expect(dialog).toHaveCount(0);
+    // Now there is a move to undo, and the hint says so.
+    await page.getByTestId("hint").click();
+    await expect(page.getByTestId("toast")).toContainText("Înapoi");
 
     // "Joc nou" from the dialog deals a fresh game.
     await loadState(page, deadEndBoard());

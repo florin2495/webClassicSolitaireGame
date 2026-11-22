@@ -66,7 +66,6 @@ export function Solitaire() {
   // Keyed on the position, not on the game object: the clock makes a new game object every second.
   const posKey = useMemo(() => (game ? positionKey(game) : null), [game]);
   const [lostCheck, setLostCheck] = useState<{ key: string; outlook: Outlook } | null>(null);
-  const [lostDismissedSeed, setLostDismissedSeed] = useState<number | null>(null);
   const lost = !!game && !game.won && posKey !== null && lostCheck?.key === posKey && lostCheck.outlook === "lost";
 
   // Board size.
@@ -127,17 +126,19 @@ export function Solitaire() {
   }
 
   function showHint() {
-    const g = getSnapshot().game;
+    const { game: g, canUndo } = getSnapshot();
     if (g.won) return;
+    // "Înapoi" only when there is something to undo (the history is not kept across a reload).
+    const way = canUndo ? "Încearcă „Înapoi” sau un joc nou." : "Începe un joc nou.";
     if (lost) {
       setHint(null);
-      flash("Jocul nu mai poate fi câștigat: nicio mutare nu mai ajută. Încearcă „Înapoi” sau un joc nou.");
+      flash(`Jocul nu mai poate fi câștigat: nicio mutare nu mai ajută. ${way}`);
       return;
     }
     const h = findHint(g);
     if (!h) {
       setHint(null);
-      flash("Nu mai sunt mutări. Încearcă „Înapoi” sau un joc nou.");
+      flash(`Nu mai sunt mutări. ${way}`);
       return;
     }
     setHint(h);
@@ -449,14 +450,15 @@ export function Solitaire() {
         </Modal>
       )}
 
-      {game && lost && lostDismissedSeed !== game.seed && !menuOpen && !confirmNew && (
-        <Modal title="Nu mai sunt mutări" onClose={() => setLostDismissedSeed(game.seed)} testId="lost-dialog">
+      {game && lost && !game.lostDismissed && !menuOpen && !confirmNew && (
+        <Modal title="Nu mai sunt mutări" onClose={() => actions.dismissLost()} testId="lost-dialog">
           <p className="mb-4">
             Am încercat toate mutările posibile, cu toate cărțile din pachet: niciuna nu mai urcă o carte sus și nici nu
             mai întoarce o carte. Jocul acesta nu mai poate fi câștigat.
+            {snap?.canUndo && " Poți să te întorci cu „Înapoi” sau să începi un joc nou."}
           </p>
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" className={btnSecondary} onClick={() => setLostDismissedSeed(game.seed)} data-testid="lost-close">
+            <button type="button" className={btnSecondary} onClick={() => actions.dismissLost()} data-testid="lost-close">
               Mă mai uit
             </button>
             <button type="button" className={btnPrimary} onClick={startNewGame} data-testid="lost-new-game">

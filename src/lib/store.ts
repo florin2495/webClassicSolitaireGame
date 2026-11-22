@@ -240,6 +240,11 @@ export const actions = {
       commit({ ...cur, settings }, ruleChanged);
     }
   },
+  /** "Mă mai uit" on the "no more moves" dialog: saved with the game, so a reload does not bring it back. */
+  dismissLost() {
+    const cur = getSnapshot();
+    if (!cur.game.lostDismissed) commit({ ...cur, game: { ...cur.game, lostDismissed: true } });
+  },
   markCelebrated() {
     const cur = getSnapshot();
     if (cur.game.won && !cur.game.celebrated) commit({ ...cur, game: { ...cur.game, celebrated: true } });

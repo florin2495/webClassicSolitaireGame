@@ -75,6 +75,19 @@ describe("store", () => {
     expect(getSnapshot().stats.played).toBe(2);
   });
 
+  it("closing the 'no more moves' dialog is kept with the game, through undo, until the next deal", () => {
+    expect(getSnapshot().game.lostDismissed).toBeUndefined();
+    actions.draw();
+    actions.dismissLost();
+    expect(getSnapshot().game.lostDismissed).toBe(true);
+    expect(actions.undo()).toBe(true);
+    expect(getSnapshot().game.lostDismissed).toBe(true);
+    actions.draw();
+    expect(getSnapshot().game.lostDismissed).toBe(true);
+    actions.newGame(5);
+    expect(getSnapshot().game.lostDismissed).toBeUndefined();
+  });
+
   it("an abandoned game breaks the winning streak", () => {
     actions.draw();
     actions.newGame(8);
