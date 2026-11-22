@@ -351,16 +351,28 @@ export function autoStep(s: GameState): GameState | null {
   return move(s, { kind: "tableau", index: col }, undefined, to);
 }
 
+/** Points a timed standard game loses on the clock going from `fromMs` to `toMs` (2 every full 10 seconds). */
+export function timePenalty(o: Options, fromMs: number, toMs: number): number {
+  if (o.scoring !== "standard" || !o.timed) return 0;
+  return 2 * Math.max(0, Math.floor(toMs / 10000) - Math.floor(fromMs / 10000));
+}
+
 /** Advance the clock. Timed standard games lose 2 points every full 10 seconds. */
 export function tick(s: GameState, ms: number): GameState {
   if (!s.started || s.won || ms <= 0) return s;
   const elapsedMs = s.elapsedMs + ms;
-  let score = s.score;
-  if (s.options.scoring === "standard" && s.options.timed) {
-    const steps = Math.floor(elapsedMs / 10000) - Math.floor(s.elapsedMs / 10000);
-    if (steps > 0) score = Math.max(0, score - 2 * steps);
-  }
-  return { ...s, elapsedMs, score };
+  const penalty = timePenalty(s.options, s.elapsedMs, elapsedMs);
+  return { ...s, elapsedMs, score: penalty > 0 ? Math.max(0, s.score - penalty) : s.score };
+}
+
+/**
+ * Undo from `cur` back to `prev` (an earlier state of the same game): the cards and move score of `prev`, the clock
+ * of `cur`. The clock keeps running, and the time penalty paid since `prev` stays paid (else deal + undo would win
+ * the points back).
+ */
+export function undoTo(prev: GameState, cur: GameState): GameState {
+  const penalty = timePenalty(prev.options, prev.elapsedMs, cur.elapsedMs);
+  return { ...prev, elapsedMs: cur.elapsedMs, score: penalty > 0 ? Math.max(0, prev.score - penalty) : prev.score, started: true };
 }
 
 export interface Hint {

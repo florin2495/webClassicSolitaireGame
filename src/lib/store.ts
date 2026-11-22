@@ -9,6 +9,7 @@ import {
   newGame,
   randomSeed,
   tick,
+  undoTo,
   autoTarget,
   type GameState,
   type Options,
@@ -196,8 +197,8 @@ export const actions = {
     const cur = getSnapshot();
     const prev = history.pop();
     if (!prev || cur.game.won) return false;
-    // The clock keeps running: undo restores the cards and the score, not the time.
-    commit({ ...cur, game: { ...prev, elapsedMs: cur.game.elapsedMs, started: true }, canUndo: history.length > 0 });
+    // The clock keeps running: undo restores the cards and the move score, not the time (nor its penalty).
+    commit({ ...cur, game: undoTo(prev, cur.game), canUndo: history.length > 0 });
     return true;
   },
   tick(ms: number) {

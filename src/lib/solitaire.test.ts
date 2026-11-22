@@ -22,6 +22,8 @@ import {
   SUITS,
   suitOf,
   tick,
+  timePenalty,
+  undoTo,
   type GameState,
   type Options,
   type Pile,
@@ -328,6 +330,48 @@ describe("clock", () => {
     expect(tick(newGame(1), 5000).elapsedMs).toBe(0);
     expect(tick({ ...g, options: { ...STD, timed: false } }, 60_000).score).toBe(10);
     expect(tick({ ...g, score: 1 }, 10_000).score).toBe(0);
+  });
+
+  it("undo gives back the cards and the move score, never the time penalty", () => {
+    // Standard, timed: 100 points at 5 s, a deal, then 30 s later (3 penalties) an undo.
+    const prev = { ...newGame(3, STD), started: true, score: 100, elapsedMs: 5_000 };
+    const dealt = draw(prev)!;
+    const later = tick(dealt, 30_000);
+    expect(later.score).toBe(94);
+    const back = undoTo(prev, later);
+    expect(back.stock).toEqual(prev.stock);
+    expect(back.waste).toEqual([]);
+    expect(back.elapsedMs).toBe(35_000);
+    expect(back.score).toBe(94);
+    // Deal + undo over and over: the score keeps going down with the clock.
+    let g = back;
+    for (let i = 0; i < 5; i++) g = undoTo(g, tick(draw(g)!, 10_000));
+    expect(g.score).toBe(84);
+    // A move score is given back (+10 to a foundation undone), the penalty in between is not.
+    const scored = { ...later, score: later.score + 10 };
+    expect(undoTo(later, tick(scored, 10_000)).score).toBe(92);
+    // Never below 0.
+    expect(undoTo({ ...prev, score: 3 }, later).score).toBe(0);
+    // Several undos in a row: each history state already holds the penalties up to its own time.
+    const a = { ...prev, elapsedMs: 0, score: 50 };
+    const b = { ...tick(draw(a)!, 15_000), score: 58 }; // 50 - 2 + 10
+    const c = tick({ ...draw(b)!, score: 68 }, 20_000); // at 35 s: -4
+    expect(c.score).toBe(64);
+    const toB = undoTo(b, c);
+    expect(toB.score).toBe(54);
+    expect(undoTo(a, toB).score).toBe(44); // 50 - 3 penalties (10, 20, 30 s)
+  });
+
+  it("the time penalty only applies to timed standard games", () => {
+    expect(timePenalty(STD, 5_000, 35_000)).toBe(6);
+    expect(timePenalty(STD, 35_000, 5_000)).toBe(0);
+    expect(timePenalty({ ...STD, timed: false }, 0, 60_000)).toBe(0);
+    expect(timePenalty({ ...STD, scoring: "vegas" }, 0, 60_000)).toBe(0);
+    expect(timePenalty({ ...STD, scoring: "none" }, 0, 60_000)).toBe(0);
+    const vegas = { ...newGame(3, { ...STD, scoring: "vegas" }), started: true, elapsedMs: 5_000 };
+    expect(undoTo(vegas, tick(draw(vegas)!, 60_000)).score).toBe(-52);
+    const untimed = { ...newGame(3, { ...STD, timed: false }), started: true, score: 20 };
+    expect(undoTo(untimed, tick(draw(untimed)!, 60_000)).score).toBe(20);
   });
 });
 
