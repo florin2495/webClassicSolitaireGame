@@ -82,9 +82,9 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
 | Workflow | Runs |
 | --- | --- |
 | `check.yml` "Check code" | `npx next typegen` + `npx tsc --noEmit`, `npx eslint src`, `npx next build` (every step runs) |
-| `unit-tests.yml` "Unit tests" | `npm test` (Vitest): rules incl. 150 hint-played random games, layout on 4 screen sizes, card art, store (in memory), feedback validation |
+| `unit-tests.yml` "Unit tests" | `npm test` (Vitest): rules incl. 150 hint-played random games, layout on 4 screen sizes, card art, store (in memory; reloads over a stubbed localStorage), undo time penalty, lost-check position key, update decision, feedback validation |
 | `e2e.yml` "E2E" | `node scripts/e2e.mjs <base_url>`: page, version in the client JS, `/api/version`, manifest, icons, `sw.js` headers, feedback validation (400s and the honeypot, nothing stored), fra1, 404 |
-| `e2e-ui.yml` "E2E UI (Playwright)" | `tests/ui/*.e2e.ts` on desktop Chromium and Pixel 7 (Chromium): a fixed deal played by taps must match the engine card for card, undo, reload keeps the game, draw 3 fan, new-game confirmation, hint, win (auto-finish, bouncing cards, result, no replay after reload), menu settings/backs/stats; desktop only: manifest + `sw.js`, offline reload, update button (mocked `/api/version`), drag & drop; phone only: fits the screen, card and button sizes, landscape |
+| `e2e-ui.yml` "E2E UI (Playwright)" | `tests/ui/*.e2e.ts` on desktop Chromium and Pixel 7 (Chromium): a fixed deal played by taps must match the engine card for card, undo, reload keeps the game, draw 3 fan, new-game confirmation, hint, win (auto-finish, bouncing cards, result, no replay after reload, reload during the cascade), two quick stock taps, lost dialog (steady, stays closed after a reload), menu settings/backs/stats (wipe asks first); desktop only: manifest + `sw.js`, offline reload, update button (mocked `/api/version`; none at the live version, worker answers `GET_VERSION`), drag & drop; phone only: fits the screen, card and button sizes, landscape |
 
 - E2E and E2E UI need the deploy of the version under test to be live (run them on `main` after Vercel finished).
   No database, so no `concurrency: e2e` group (nothing shared to protect) and **no repo secrets on purpose** (no
