@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backUrl, BACKS, cardBackSvg, cardFaceSvg, cardLabel, faceUrl, RANK_LABEL, type BackId } from "./cards";
+import { backUrl, BACKS, cardBackSvg, cardFaceSvg, cardLabel, faceUrl, RANK_LABEL, ZOOMS, type BackId } from "./cards";
 import { cardOf, rankOf } from "./solitaire";
 
 const uses = (svg: string) => svg.split("<use ").length - 1;
@@ -18,6 +18,35 @@ describe("card art", () => {
     }
   });
 
+  it("Zoom in 1x: bigger corners, still every pip", () => {
+    for (let c = 0; c < 52; c++) {
+      const r = rankOf(c);
+      const svg = cardFaceSvg(c, 1);
+      expect(svg).toContain(`>${RANK_LABEL[r]}</text>`);
+      expect(svg).toMatch(/font-size="4[02]"/);
+      expect(uses(svg)).toBe(2 + (r === 1 ? 1 : r <= 10 ? r : 2));
+    }
+  });
+
+  it("Zoom in 2x: a big corner and one big suit with the rank on it, for every card", () => {
+    for (let c = 0; c < 52; c++) {
+      const r = rankOf(c);
+      const svg = cardFaceSvg(c, 2);
+      expect(svg).toMatch(/font-size="5[24]"/);
+      // The corner mark + one big suit, no upside-down corner.
+      expect(uses(svg)).toBe(2);
+      expect(svg).not.toContain("rotate(180 50 70)");
+      expect(svg).toContain(`fill="#fff">${RANK_LABEL[r]}</text>`);
+    }
+  });
+
+  it("caches one face per card and zoom level", () => {
+    const urls = ZOOMS.map((z) => faceUrl(5, z));
+    expect(new Set(urls).size).toBe(3);
+    expect(faceUrl(5, 2)).toBe(urls[2]);
+    expect(faceUrl(5)).toBe(urls[0]);
+  });
+
   it("colours hearts and diamonds red, the others black", () => {
     expect(cardFaceSvg(cardOf("H", 5))).toContain('color="#c8102e"');
     expect(cardFaceSvg(cardOf("D", 5))).toContain('color="#c8102e"');
@@ -25,7 +54,7 @@ describe("card art", () => {
   });
 
   it("never uses the suit characters (Android may show them as emoji)", () => {
-    for (let c = 0; c < 52; c++) expect(cardFaceSvg(c)).not.toMatch(/[♠-♧]/);
+    for (const z of ZOOMS) for (let c = 0; c < 52; c++) expect(cardFaceSvg(c, z)).not.toMatch(/[♠-♧]/);
   });
 
   it("builds data URLs for faces and every back", () => {

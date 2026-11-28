@@ -55,6 +55,12 @@ silently starts a new game).
   the win). The "Ai câștigat! Atinge ecranul…" text sits on a dark pill above the trails.
 - Card art is drawn in `src/lib/cards.ts` as SVG (our own design, not copied from any other game). Suits are SVG
   shapes, never the ♠♥♦♣ characters (Android may draw those as emoji). Three backs (blue, red, green).
+- "Zoom in" (menu: Fără / 1x / 2x, `Settings.zoom` 0/1/2, **default 1x**, the user's choice 2026-11-28, made for an
+  older player): kept per phone in `solitaire:settings:v1` like every setting; missing in older saves = 1x.
+  1x = bigger corner index (rank ~+70%, suit ~+50%), pips moved in and smaller, layout unchanged except a wider draw-3
+  fan. 2x = index about twice the normal size, no upside-down corner, the middle is one big suit with the rank on it
+  in white (also J/Q/K, no crowns); covered tableau cards show 36% instead of 27% (`UP_STEP` / `FAN_STEP` in
+  `layout.ts`), so long columns get squeezed sooner. The corner index must fit in that visible strip.
 - Layout: `src/lib/layout.ts`, 7 columns across the width, long columns squeezed to stay on screen.
 - Store: `src/lib/store.ts`, a module-level store for `useSyncExternalStore` (no setState in effects), saved on
   every change. `?seed=N&draw=1|3` deals a fixed game (tests); the parameters are removed from the URL right away.
@@ -82,9 +88,9 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
 | Workflow | Runs |
 | --- | --- |
 | `check.yml` "Check code" | `npx next typegen` + `npx tsc --noEmit`, `npx eslint src`, `npx next build` (every step runs) |
-| `unit-tests.yml` "Unit tests" | `npm test` (Vitest): rules incl. 150 hint-played random games, layout on 4 screen sizes, card art, store (in memory; reloads over a stubbed localStorage), undo time penalty, lost-check position key, update decision, feedback validation |
+| `unit-tests.yml` "Unit tests" | `npm test` (Vitest): rules incl. 150 hint-played random games, layout on 4 screen sizes × 3 zoom levels, card art (every zoom level), store (in memory; reloads over a stubbed localStorage), undo time penalty, lost-check position key, update decision, feedback validation |
 | `e2e.yml` "E2E" | `node scripts/e2e.mjs <base_url>`: page, version in the client JS, `/api/version`, manifest, icons, `sw.js` headers, feedback validation (400s and the honeypot, nothing stored), fra1, 404 |
-| `e2e-ui.yml` "E2E UI (Playwright)" | `tests/ui/*.e2e.ts` on desktop Chromium and Pixel 7 (Chromium): a fixed deal played by taps must match the engine card for card, undo, reload keeps the game, draw 3 fan, new-game confirmation, hint, win (auto-finish, bouncing cards, result, no replay after reload, reload during the cascade), two quick stock taps, lost dialog (steady, stays closed after a reload), menu settings/backs/stats (wipe asks first); desktop only: manifest + `sw.js`, offline reload, update button (mocked `/api/version`; none at the live version, worker answers `GET_VERSION`), drag & drop; phone only: fits the screen, card and button sizes, landscape |
+| `e2e-ui.yml` "E2E UI (Playwright)" | `tests/ui/*.e2e.ts` on desktop Chromium and Pixel 7 (Chromium): a fixed deal played by taps must match the engine card for card, undo, reload keeps the game, draw 3 fan, new-game confirmation, hint, win (auto-finish, bouncing cards, result, no replay after reload, reload during the cascade), two quick stock taps, lost dialog (steady, stays closed after a reload), menu settings/backs/stats (wipe asks first), Zoom in (1x by default, changes the faces, kept after a reload); desktop only: manifest + `sw.js`, offline reload, update button (mocked `/api/version`; none at the live version, worker answers `GET_VERSION`), drag & drop; phone only: fits the screen, card and button sizes, landscape |
 
 - E2E and E2E UI need the deploy of the version under test to be live (run them on `main` after Vercel finished).
   No database, so no `concurrency: e2e` group (nothing shared to protect) and **no repo secrets on purpose** (no
@@ -92,7 +98,7 @@ All checks run in GitHub Actions on the free tier (public repo, `ubuntu-latest` 
 - Playwright files are `*.e2e.ts`, never `*.spec.ts` / `*.test.ts` (Vitest would pick those up).
 - UI tests use `data-card` / `data-pile` (`stock`, `waste`, `f0`-`f3`, `t0`-`t6`) / `data-index` / `data-up` on the card
   images, `data-slot` on the empty places, and `data-testid`: `board`, `stock-slot`, `score`, `time`, `new-game`,
-  `undo`, `hint`, `menu-open`, `menu`, `menu-new-game`, `setting-draw`, `setting-scoring`, `setting-timed`, `setting-empty`, `stats`,
+  `undo`, `hint`, `menu-open`, `menu`, `menu-new-game`, `setting-draw`, `setting-scoring`, `setting-timed`, `setting-empty`, `setting-zoom`, `stats`,
   `stat-played`, `stat-won`, `app-version`, `confirm-new`, `confirm-new-yes`, `stats-reset`, `confirm-reset`, `confirm-reset-no`, `confirm-reset-yes`, `toast`, `win-cascade`, `win-cascade-text`, `win-dialog`,
   `win-score`, `win-new-game`, `lost-dialog`, `lost-close`, `lost-new-game`, `update-reload`, `install`. Renaming one breaks `tests/ui`.
 - Dev server (only if the user asks): `npm run dev -- -p 3012`.

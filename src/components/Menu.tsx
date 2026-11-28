@@ -89,6 +89,21 @@ export function Menu({
             )}
           </section>
 
+          <section className="flex flex-col gap-1">
+            <Choice
+              label="Zoom in"
+              testId="setting-zoom"
+              value={settings.zoom}
+              options={[
+                { value: 0, label: "Fără" },
+                { value: 1, label: "1x" },
+                { value: 2, label: "2x" },
+              ]}
+              onChange={(v) => actions.updateSettings({ zoom: v })}
+            />
+            <p className="text-xs text-zinc-500">Cifre și semne mai mari pe cărți. Se ține minte pe telefonul acesta.</p>
+          </section>
+
           <section>
             <h3 className="mb-2 text-sm font-semibold text-zinc-600">Spatele cărților</h3>
             <div className="flex gap-3">

@@ -1,5 +1,6 @@
 // Board geometry: where every pile and every card sits, for a board of the given size (CSS pixels).
 // Top row: stock, waste (fanned for draw 3), an empty slot, 4 foundations. Below: 7 tableau columns.
+import type { Zoom } from "./cards";
 import type { GameState, Pile } from "./solitaire";
 
 export const CARD_RATIO = 1.4;
@@ -20,7 +21,12 @@ export interface Layout {
   fanStep: number;
 }
 
-export function computeLayout(width: number, height: number): Layout {
+// Per "Zoom in" level: how much of a covered face-up tableau card shows (its corner index has to fit) and how far the
+// draw-3 waste cards fan out (so the bigger rank is not hidden under the next card).
+const UP_STEP: Record<Zoom, number> = { 0: 0.27, 1: 0.27, 2: 0.36 };
+const FAN_STEP: Record<Zoom, number> = { 0: 0.3, 1: 0.45, 2: 0.55 };
+
+export function computeLayout(width: number, height: number, zoom: Zoom = 0): Layout {
   const pad = Math.max(4, Math.min(16, width * 0.015));
   // Width-bound: 7 cards and 6 gaps of 12% of a card.
   let cardW = (width - 2 * pad) / (7 + 6 * 0.12);
@@ -44,8 +50,8 @@ export function computeLayout(width: number, height: number): Layout {
     topY,
     tabY,
     downStep: cardH * 0.11,
-    upStep: cardH * 0.27,
-    fanStep: cardW * 0.3,
+    upStep: cardH * UP_STEP[zoom],
+    fanStep: cardW * FAN_STEP[zoom],
   };
 }
 

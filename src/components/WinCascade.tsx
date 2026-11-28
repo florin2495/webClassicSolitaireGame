@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { launchVelocity, outlineWidth } from "@/lib/cascade";
-import { faceUrl } from "@/lib/cards";
+import { faceUrl, type Zoom } from "@/lib/cards";
 
 export interface Launch {
   card: number;
@@ -17,12 +17,14 @@ export interface Launch {
  */
 export function WinCascade({
   launches,
+  zoom,
   cardW,
   cardH,
   onLaunch,
   onDone,
 }: {
   launches: Launch[];
+  zoom: Zoom;
   cardW: number;
   cardH: number;
   onLaunch: (card: number) => void;
@@ -49,7 +51,7 @@ export function WinCascade({
     const images = new Map<number, HTMLImageElement>();
     for (const l of launches) {
       const img = new Image();
-      img.src = faceUrl(l.card);
+      img.src = faceUrl(l.card, zoom);
       images.set(l.card, img);
     }
     const s = Math.max(0.8, cardW / 71);
@@ -115,7 +117,7 @@ export function WinCascade({
       stopped = true;
       cancelAnimationFrame(raf);
     };
-  }, [launches, cardW, cardH]);
+  }, [launches, zoom, cardW, cardH]);
 
   return (
     <div className="absolute inset-0 z-[5000]" onPointerDown={() => callbacks.current.onDone()} data-testid="win-cascade">

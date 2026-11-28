@@ -154,14 +154,20 @@ describe("stats", () => {
   });
 
   it("reads back stored settings and stats defensively", () => {
-    expect(parseSettings(null)).toEqual({ drawCount: 1, scoring: "standard", timed: true, kingOnly: false, back: "blue" });
+    expect(parseSettings(null)).toEqual({ drawCount: 1, scoring: "standard", timed: true, kingOnly: false, back: "blue", zoom: 1 });
     expect(parseSettings({ drawCount: 3, scoring: "vegas", timed: false, back: "red" })).toEqual({
       drawCount: 3,
       scoring: "vegas",
       timed: false,
       kingOnly: false,
       back: "red",
+      zoom: 1,
     });
+    // "Zoom in": 1x when missing (older saves) or unknown, otherwise what the phone kept.
+    expect(parseSettings({ zoom: 0 }).zoom).toBe(0);
+    expect(parseSettings({ zoom: 2 }).zoom).toBe(2);
+    expect(parseSettings({ zoom: 5 }).zoom).toBe(1);
+    expect(parseSettings({ zoom: "2" }).zoom).toBe(1);
     expect(parseSettings({ drawCount: 7, scoring: "x", back: "pink" })).toMatchObject({ drawCount: 1, scoring: "standard", back: "blue" });
     expect(parseStats({ played: -3, won: "x", bestScore: 12 })).toMatchObject({ played: 0, won: 0, bestScore: 12, bestTimeMs: null });
   });

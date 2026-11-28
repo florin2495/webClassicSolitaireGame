@@ -1,6 +1,6 @@
 // Client-side game store for useSyncExternalStore: the current game, undo history, settings and statistics.
 // Everything is kept in localStorage, so closing the app (or reloading for an update) never loses a game.
-import { isBackId, type BackId } from "./cards";
+import { isBackId, isZoom, type BackId, type Zoom } from "./cards";
 import {
   autoStep,
   draw,
@@ -19,6 +19,8 @@ import {
 export interface Settings extends Options {
   kingOnly: boolean;
   back: BackId;
+  /** "Zoom in" in the menu; missing in older saves = 1 (on by default). Kept per device, like every setting. */
+  zoom: Zoom;
 }
 
 export interface Stats {
@@ -45,7 +47,7 @@ export const KEY_SETTINGS = "solitaire:settings:v1";
 export const KEY_STATS = "solitaire:stats:v1";
 const HISTORY_MAX = 500;
 
-export const DEFAULT_SETTINGS: Settings = { drawCount: 1, scoring: "standard", timed: true, kingOnly: false, back: "blue" };
+export const DEFAULT_SETTINGS: Settings = { drawCount: 1, scoring: "standard", timed: true, kingOnly: false, back: "blue", zoom: 1 };
 export const EMPTY_STATS: Stats = { played: 0, won: 0, bestScore: null, bestTimeMs: null, streak: 0, bestStreak: 0 };
 
 let snap: Snapshot | null = null;
@@ -77,6 +79,7 @@ export function parseSettings(x: unknown): Settings {
     timed: o.timed !== false,
     kingOnly: o.kingOnly === true,
     back: isBackId(o.back) ? o.back : DEFAULT_SETTINGS.back,
+    zoom: isZoom(o.zoom) ? o.zoom : DEFAULT_SETTINGS.zoom,
   };
 }
 

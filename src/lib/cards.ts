@@ -6,6 +6,15 @@ import { isRed, rankOf, suitOf, type Suit } from "./solitaire";
 export const RANK_LABEL = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 export const SUIT_NAME: Record<Suit, string> = { S: "pică", H: "inimă roșie", C: "treflă", D: "romb" };
 
+/**
+ * Menu setting "Zoom in" (for older eyes): 0 = off, 1 = bigger corner index (layout unchanged), 2 = index about twice
+ * the normal size, no bottom corner, and one big suit with the rank on it instead of the pips (more of every covered
+ * card shows, see `computeLayout`).
+ */
+export type Zoom = 0 | 1 | 2;
+export const ZOOMS: readonly Zoom[] = [0, 1, 2];
+export const isZoom = (x: unknown): x is Zoom => x === 0 || x === 1 || x === 2;
+
 const RED = "#c8102e";
 const BLACK = "#141414";
 const FONT = "Arial, Helvetica, sans-serif";
@@ -55,24 +64,57 @@ const CROWN: Record<number, string> = {
   13: '<path d="M33 55l2-17 8 8 7-12 7 12 8-8 2 17z" fill="#e3b23c"/><path d="M33 55h34v4H33z" fill="#b8860b"/><circle cx="50" cy="44" r="2.5" fill="' + RED + '"/>',
 };
 
-function corner(label: string, s: Suit): string {
-  const spacing = label === "10" ? ' letter-spacing="-2"' : "";
+// Corner index per zoom level: rank on the left, suit on the right, all inside the strip a covered tableau card
+// shows (27% of the height, 36% at zoom 2).
+const CORNER: Record<Zoom, { x: number; y: number; size: number; tenSize: number; tenSpacing: number; pip: [number, number, number] }> = {
+  0: { x: 5, y: 25, size: 25, tenSize: 25, tenSpacing: -2, pip: [84, 15, 20] },
+  1: { x: 4, y: 37, size: 42, tenSize: 40, tenSpacing: -4, pip: [80, 21, 30] },
+  2: { x: 3, y: 48, size: 54, tenSize: 52, tenSpacing: -5, pip: [79, 26, 36] },
+};
+
+function corner(label: string, s: Suit, zoom: Zoom): string {
+  const c = CORNER[zoom];
+  const ten = label === "10";
+  const spacing = ten ? ` letter-spacing="${c.tenSpacing}"` : "";
   return (
-    `<text x="5" y="25" font-family="${FONT}" font-weight="700" font-size="25"${spacing} fill="currentColor">${label}</text>` +
-    pip(s, 84, 15, 20)
+    `<text x="${c.x}" y="${c.y}" font-family="${FONT}" font-weight="700" font-size="${ten ? c.tenSize : c.size}"${spacing} fill="currentColor">${label}</text>` +
+    pip(s, ...c.pip)
   );
 }
 
-export function cardFaceSvg(card: number): string {
+// Zoom 2: one big suit (y 62..134) with the rank on it in white. Fraction of the shape's height where its widest
+// part sits, so the rank lands there.
+const BIG_TOP = 62;
+const BIG_SIZE = 72;
+const BIG_CENTRE: Record<Suit, number> = { S: 0.6, H: 0.4, C: 0.5, D: 0.5 };
+
+function bigSuit(s: Suit, label: string): string {
+  const ten = label === "10";
+  const fs = ten ? 30 : 34;
+  // 0.358 = half the cap height of Arial bold, so the text is centred vertically.
+  const y = (BIG_TOP + BIG_SIZE * BIG_CENTRE[s] + fs * 0.358).toFixed(1);
+  return (
+    pip(s, 50, BIG_TOP + BIG_SIZE / 2, BIG_SIZE) +
+    `<text x="50" y="${y}" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="${fs}"${
+      ten ? ' letter-spacing="-2"' : ""
+    } fill="#fff">${label}</text>`
+  );
+}
+
+export function cardFaceSvg(card: number, zoom: Zoom = 0): string {
   const s = suitOf(card);
   const r = rankOf(card);
   const color = isRed(card) ? RED : BLACK;
   const label = RANK_LABEL[r];
+  // Zoom 1: the big corners take the top and bottom 40 units, so the pips move closer to the middle and get smaller.
+  const pipY = (y: number) => (zoom === 1 ? 70 + (y - 70) * 0.75 : y);
   let middle = "";
-  if (r === 1) {
-    middle = pip(s, 50, 72, s === "S" ? 50 : 42);
+  if (zoom === 2) {
+    middle = bigSuit(s, label);
+  } else if (r === 1) {
+    middle = pip(s, 50, 72, zoom === 1 ? (s === "S" ? 42 : 36) : s === "S" ? 50 : 42);
   } else if (r <= 10) {
-    middle = PIPS[r].map(([x, y]) => pip(s, x, y, 17, y > 72)).join("");
+    middle = PIPS[r].map(([x, y]) => pip(s, x, pipY(y), zoom === 1 ? 14 : 17, y > 72)).join("");
   } else {
     middle =
       `<rect x="19" y="31" width="62" height="78" rx="5" fill="#fbf2d5" stroke="${color}" stroke-width="1.5"/>` +
@@ -80,13 +122,15 @@ export function cardFaceSvg(card: number): string {
       `<text x="50" y="92" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="36" fill="${color}">${label}</text>` +
       pip(s, 28, 100, 10) +
       pip(s, 72, 100, 10);
+    if (zoom === 1) middle = `<g transform="translate(50 70) scale(0.7) translate(-50 -70)">${middle}</g>`;
   }
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 100 140" color="${color}">` +
     `<defs>${symbols(color)}</defs>` +
     `<rect x="0.75" y="0.75" width="98.5" height="138.5" rx="7" fill="#fff" stroke="#8a8a8a" stroke-width="1.5"/>` +
-    corner(label, s) +
-    `<g transform="rotate(180 50 70)">${corner(label, s)}</g>` +
+    corner(label, s, zoom) +
+    // Zoom 2 has no upside-down corner: the big suit sits there.
+    (zoom === 2 ? "" : `<g transform="rotate(180 50 70)">${corner(label, s, zoom)}</g>`) +
     middle +
     `</svg>`
   );
@@ -119,11 +163,12 @@ export function cardBackSvg(back: BackId): string {
 export const svgUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
 const faceCache = new Map<number, string>();
-export function faceUrl(card: number): string {
-  let u = faceCache.get(card);
+export function faceUrl(card: number, zoom: Zoom = 0): string {
+  const key = zoom * 52 + card;
+  let u = faceCache.get(key);
   if (!u) {
-    u = svgUrl(cardFaceSvg(card));
-    faceCache.set(card, u);
+    u = svgUrl(cardFaceSvg(card, zoom));
+    faceCache.set(key, u);
   }
   return u;
 }

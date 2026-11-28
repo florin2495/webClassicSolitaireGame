@@ -58,7 +58,8 @@ export function Solitaire() {
   const [launched, setLaunched] = useState<number[]>([]);
 
   const game = snap?.game ?? null;
-  const layout = useMemo(() => (size ? computeLayout(size.w, size.h) : null), [size]);
+  const zoom = snap?.settings.zoom ?? 0;
+  const layout = useMemo(() => (size ? computeLayout(size.w, size.h, zoom) : null), [size, zoom]);
   const positions = useMemo(() => (game && layout ? cardPositions(game, layout) : null), [game, layout]);
   const celebrating = !!game && game.won && !!snap?.cascading;
   const launches = useMemo(() => (game && layout && celebrating ? launchesOf(game, layout) : []), [game, layout, celebrating]);
@@ -382,7 +383,7 @@ export function Solitaire() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={c}
-                  src={p.faceUp ? faceUrl(c) : backUrl(settings.back)}
+                  src={p.faceUp ? faceUrl(c, settings.zoom) : backUrl(settings.back)}
                   alt={p.faceUp ? cardLabel(c) : "carte cu fața în jos"}
                   draggable={false}
                   data-card={c}
@@ -406,6 +407,7 @@ export function Solitaire() {
             {celebrating && (
               <WinCascade
                 launches={launches}
+                zoom={settings.zoom}
                 cardW={layout.cardW}
                 cardH={layout.cardH}
                 onLaunch={(card) => setLaunched((l) => [...l, card])}

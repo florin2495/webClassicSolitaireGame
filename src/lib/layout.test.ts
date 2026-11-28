@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cardPositions, computeLayout, dropTarget } from "./layout";
+import { ZOOMS } from "./cards";
 import { cardOf, newGame, type GameState } from "./solitaire";
 
 /** A column as long as it can get: 6 face-down cards and a full king-to-ace run. */
@@ -24,9 +25,9 @@ const SIZES: [number, number, string][] = [
 ];
 
 describe("layout", () => {
-  for (const [w, h, name] of SIZES) {
-    it(`fits 7 columns and the longest column on a ${name} (${w}x${h})`, () => {
-      const l = computeLayout(w, h);
+  for (const [w, h, name] of SIZES) for (const zoom of ZOOMS) {
+    it(`fits 7 columns and the longest column on a ${name} (${w}x${h}), zoom ${zoom}`, () => {
+      const l = computeLayout(w, h, zoom);
       expect(l.colX[0]).toBeGreaterThanOrEqual(0);
       expect(l.colX[6] + l.cardW).toBeLessThanOrEqual(w + 0.01);
       expect(l.tabY).toBeGreaterThan(l.topY + l.cardH);
@@ -53,6 +54,17 @@ describe("layout", () => {
       expect(last.x).toBe(l.colX[i]);
       expect(last.z).toBeGreaterThanOrEqual(pos.get(col.cards[0])!.z);
     });
+  });
+
+  it("Zoom in 2x shows more of every covered card; the zoomed draw-3 fan stays clear of the foundations", () => {
+    const l0 = computeLayout(360, 640);
+    const l2 = computeLayout(360, 640, 2);
+    expect(l2.cardW).toBe(l0.cardW);
+    expect(l2.upStep).toBeGreaterThan(l0.upStep);
+    for (const z of ZOOMS) {
+      const l = computeLayout(360, 640, z);
+      expect(l.colX[1] + 2 * l.fanStep + l.cardW).toBeLessThanOrEqual(l.colX[3]);
+    }
   });
 
   it("fans up to 3 waste cards with draw 3", () => {

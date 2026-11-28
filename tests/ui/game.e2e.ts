@@ -259,4 +259,26 @@ test.describe("Classic Solitaire", () => {
     await page.getByRole("button", { name: "Închide" }).click();
     await expect(page.locator('[data-pile="t6"][data-index="0"]')).not.toHaveAttribute("src", before ?? "");
   });
+
+  test("menu: Zoom in is 1x by default, changes the card faces and is kept after a reload", async ({ page }) => {
+    await openSeed(page, SEED);
+    const face = page.locator('[data-pile="t0"][data-index="0"]');
+    const zoom = page.getByTestId("setting-zoom");
+    const src1 = await face.getAttribute("src");
+    await page.getByTestId("menu-open").click();
+    await expect(zoom.getByRole("button", { name: "1x" })).toHaveAttribute("aria-pressed", "true");
+    await zoom.getByRole("button", { name: "2x" }).click();
+    await page.getByRole("button", { name: "Închide" }).click();
+    await expect(face).not.toHaveAttribute("src", src1 ?? "");
+    const src2 = await face.getAttribute("src");
+
+    await page.reload();
+    await expect(face).toHaveAttribute("src", src2 ?? "");
+    await page.getByTestId("menu-open").click();
+    await expect(zoom.getByRole("button", { name: "2x" })).toHaveAttribute("aria-pressed", "true");
+    await zoom.getByRole("button", { name: "Fără" }).click();
+    await page.getByRole("button", { name: "Închide" }).click();
+    await expect(face).not.toHaveAttribute("src", src1 ?? "");
+    await expect(face).not.toHaveAttribute("src", src2 ?? "");
+  });
 });
